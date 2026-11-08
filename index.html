@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#3b2f5c" />
+    <meta name="description" content="Adopt a pixel kitten, look after it every day and watch it grow." />
+    <title>Pixel Cat</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <header class="topbar">
+        <div class="who">
+          <span id="cat-name" class="name"></span>
+          <span id="cat-age" class="age"></span>
+        </div>
+        <div class="coins" aria-live="polite"><span id="coin-icon"></span><span id="coins">0</span></div>
+        <button id="sound-btn" class="chip" type="button"></button>
+        <button id="settings-btn" class="chip icon-only" type="button"></button>
+      </header>
+
+      <section id="stats" class="stats"></section>
+
+      <section class="stage">
+        <div class="screen">
+          <canvas id="room" width="96" height="80"></canvas>
+          <div id="bubble" class="bubble" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <nav class="actions">
+        <button class="action" data-action="feed" type="button"></button>
+        <button class="action" data-action="play" type="button"></button>
+        <button class="action" data-action="clean" type="button"></button>
+        <button class="action" data-action="sleep" type="button"></button>
+        <button class="action" data-action="shop" type="button"></button>
+        <button class="action" data-action="share" type="button"></button>
+      </nav>
+    </main>
+
+    <dialog id="sheet" class="sheet"></dialog>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
