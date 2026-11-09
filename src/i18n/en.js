@@ -151,4 +151,11 @@ export default {
   sticker_adult: 'All grown up',
   sticker_shopper: 'Shopper (5 items)',
   sticker_decorator: 'Decorator (every wallpaper)',
+
+  sharePhoto: 'Photo card',
+  shareClip: 'Video clip (6 seconds)',
+  shareVideo: 'Share video',
+  recording: 'Recording... {n}s',
+  clipReady: 'Your clip is ready!',
+  clipFailed: "Couldn't record a video here.",
 };

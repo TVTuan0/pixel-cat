@@ -42,7 +42,12 @@ export async function makeCard(state, { title, caption }) {
 
 export async function shareCard(card, { fileName, text }) {
   const blob = await new Promise((resolve) => card.toBlob(resolve, 'image/png'));
-  const file = new File([blob], fileName, { type: 'image/png' });
+  await shareFile(blob, { fileName, text });
+}
+
+// Shares a picture or video through the phone's share sheet, or downloads it.
+export async function shareFile(blob, { fileName, text }) {
+  const file = new File([blob], fileName, { type: blob.type });
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file], text: `${text} ${SITE_URL}` });

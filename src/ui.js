@@ -202,6 +202,14 @@ function languageSwitch(current, onLang) {
   );
 }
 
+export function openShareChoice({ canVideo, onPhoto, onVideo }) {
+  const body = el('div', { class: 'list' },
+    el('button', { class: 'row btn', type: 'button', onclick: onPhoto }, el('span', { class: 'icon' }, spriteCanvas('camera', 4)), el('span', { class: 'grow' }, t('sharePhoto'))),
+    canVideo ? el('button', { class: 'row btn', type: 'button', onclick: onVideo }, el('span', { class: 'icon' }, spriteCanvas('fish', 4)), el('span', { class: 'grow' }, t('shareClip'))) : null,
+  );
+  openSheet(t('share'), body);
+}
+
 const TASK_ICONS = { feed: 'food_kibble', treat: 'food_cream', pet: 'heart', clean: 'broom', play: 'fish', fish: 'goldfish' };
 
 export function openTasks(state, now, { onClaim }) {

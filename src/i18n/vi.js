@@ -151,4 +151,11 @@ export default {
   sticker_adult: 'Trưởng thành',
   sticker_shopper: 'Mê mua sắm (5 món)',
   sticker_decorator: 'Nhà trang trí (đủ giấy dán tường)',
+
+  sharePhoto: 'Thẻ ảnh',
+  shareClip: 'Video ngắn (6 giây)',
+  shareVideo: 'Chia sẻ video',
+  recording: 'Đang quay... {n}s',
+  clipReady: 'Video đã xong!',
+  clipFailed: 'Không quay được video ở đây.',
 };

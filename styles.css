@@ -248,3 +248,5 @@ input[type='text'] {
 .sticker.locked .sprite-icon { filter: grayscale(1) brightness(0.6); opacity: 0.45; }
 .sticker.locked { color: var(--muted); }
 .sticker .sprite-icon { height: 32px; width: auto !important; }
+
+.clip-preview { width: min(240px, 60vw); aspect-ratio: 9 / 16; border: 3px solid var(--ink); border-radius: 8px; align-self: center; background: #3b2f5c; }

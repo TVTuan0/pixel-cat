@@ -4,16 +4,17 @@ import {
   applyElapsed, feed, pet, clean, toggleSleep, canPlay, finishFishGame,
   buy, equip, claimDailyGift, stageOf, ageInDays, recordAction, claimTask, checkStickers,
 } from './rules.js';
-import { FOODS, STICKERS } from './config.js';
+import { FOODS, STICKERS, CLIP_SECONDS } from './config.js';
 import { drawScene, playEffect, isOnCat, stepCat, feedCat, resetCat } from './render/canvas.js';
 import { spriteCanvas } from './render/sprites.js';
 import { setSoundEnabled, sfx } from './sound.js';
-import { makeCard, shareCard, shareLink } from './snapshot.js';
+import { makeCard, shareCard, shareLink, shareFile } from './snapshot.js';
+import { recordClip, canRecord } from './clip.js';
 import { startAnalytics, track } from './analytics.js';
 import { startInstallSupport, installState, promptInstall } from './install.js';
 import {
   initUI, renderHud, say, showMood, closeSheet, isSheetOpen, openFeed, openShop,
-  openSettings, openAdopt, openFishGame, showMessage, catPreview, openTasks,
+  openSettings, openAdopt, openFishGame, showMessage, catPreview, openTasks, openShareChoice,
 } from './ui.js';
 
 const storage = (() => {
@@ -132,16 +133,8 @@ const handlers = {
     });
   },
 
-  async share() {
-    const now = Date.now();
-    const stage = t(`stage_${stageOf(state, now)}`);
-    const card = await makeCard(state, {
-      title: t('title'),
-      caption: t('shareCard', { name: state.name, stage, n: ageInDays(state, now) + 1 }),
-    });
-    const safeName = state.name.replace(/[^\p{L}\p{N}_-]+/gu, '-') || 'cat';
-    track('share_card');
-    await shareCard(card, { fileName: `${safeName}-pixel-cat.png`, text: t('shareText', { name: state.name }) });
+  share() {
+    openShareChoice({ canVideo: canRecord() && !recording, onPhoto: sharePhoto, onVideo: shareVideo });
   },
 
   sound() {
@@ -177,6 +170,50 @@ const handlers = {
     result(t('petOk'), sfx.purr);
   },
 };
+
+function shareCaption() {
+  const now = Date.now();
+  return t('shareCard', { name: state.name, stage: t(`stage_${stageOf(state, now)}`), n: ageInDays(state, now) + 1 });
+}
+
+const fileBase = () => `${state.name.replace(/[^\p{L}\p{N}_-]+/gu, '-') || 'cat'}-pixel-cat`;
+
+async function sharePhoto() {
+  closeSheet();
+  const card = await makeCard(state, { title: t('title'), caption: shareCaption() });
+  track('share_card');
+  await shareCard(card, { fileName: `${fileBase()}.png`, text: t('shareText', { name: state.name }) });
+}
+
+let recording = false;
+
+// Records a clip, then shows it with a Share button (sharing needs a fresh tap).
+async function shareVideo() {
+  closeSheet();
+  recording = true;
+  try {
+    const blob = await recordClip(document.getElementById('room'), {
+      seconds: CLIP_SECONDS,
+      title: t('title'),
+      caption: shareCaption(),
+      onTick: (n) => say(t('recording', { n }), 1100),
+    });
+    track('clip');
+    const url = URL.createObjectURL(blob);
+    const video = document.createElement('video');
+    Object.assign(video, { src: url, autoplay: true, loop: true, muted: true, playsInline: true, className: 'clip-preview' });
+    const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
+    await showMessage(t('clipReady'), t('shareText', { name: state.name }), video, {
+      label: t('shareVideo'),
+      onClick: () => shareFile(blob, { fileName: `${fileBase()}.${ext}`, text: t('shareText', { name: state.name }) }),
+    });
+    URL.revokeObjectURL(url);
+  } catch {
+    say(t('clipFailed'));
+  } finally {
+    recording = false;
+  }
+}
 
 async function invite() {
   track('invite');
