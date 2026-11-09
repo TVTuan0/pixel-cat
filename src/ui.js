@@ -5,7 +5,7 @@ import { spriteCanvas, FURS } from './render/sprites.js';
 import { drawScene, ROOM_W, ROOM_H } from './render/canvas.js';
 import { runFishGame, drawFishGameIdle } from './minigame/fish.js';
 import { FOODS, SHOP_ITEMS, FISH_GAME_SECONDS, EQUIP_SLOTS, STICKERS } from './config.js';
-import { ageInDays, stageOf, dailyTasks, taskProgress } from './rules.js';
+import { ageInDays, stageOf, dailyTasks, taskProgress, selectedCat, needsCare, wornItem, nextCatOffer } from './rules.js';
 
 const $ = (id) => document.getElementById(id);
 const sheet = $('sheet');
@@ -38,6 +38,13 @@ export function initUI(handlers) {
   $('sound-btn').addEventListener('click', handlers.sound);
   $('tasks-btn').prepend(spriteCanvas('star', 4));
   $('tasks-btn').addEventListener('click', handlers.tasks);
+  // Cat chips are rebuilt as cats change; one listener handles them all.
+  $('cats').addEventListener('click', (e) => {
+    const chip = e.target.closest('button');
+    if (!chip) return;
+    if (chip.dataset.cat) handlers.selectCat(Number(chip.dataset.cat));
+    else handlers.addCat();
+  });
 
   for (const btn of document.querySelectorAll('.action')) {
     btn.addEventListener('click', () => handlers[btn.dataset.action]());
@@ -67,11 +74,46 @@ export function initUI(handlers) {
   });
 }
 
+export function furSwatch(fur) {
+  const colors = FURS[fur];
+  const swatch = el('span', { class: 'swatch' });
+  swatch.style.background = colors.patch
+    ? `linear-gradient(135deg, ${colors.fur} 55%, ${colors.stripe} 55% 75%, ${colors.patch} 75%)`
+    : colors.fur;
+  swatch.style.borderColor = colors.outline;
+  return swatch;
+}
+
+// One chip per cat (tap to pick it), plus a "+" chip for the next kitten. Rebuilt only when something shown changes.
+function renderCatChips(state, now) {
+  const offer = nextCatOffer(state, now);
+  const key = JSON.stringify([state.selected, offer.result, offer.price, state.lang, state.cats.map((c) => [c.id, c.name, c.fur, needsCare(c)])]);
+  const row = $('cats');
+  if (row.dataset.key === key) return;
+  row.dataset.key = key;
+  // With several cats only the selected chip shows its name, so up to 5 fit on a phone.
+  const showAllNames = state.cats.length <= 2;
+  const chips = state.cats.map((c) => {
+    const selected = c.id === state.selected;
+    const chip = el('button', { class: `cat-chip ${selected ? 'active' : ''}`, type: 'button', 'data-cat': c.id, 'aria-pressed': String(selected), 'aria-label': c.name, title: c.name },
+      furSwatch(c.fur), selected || showAllNames ? el('span', { class: 'chip-name' }, c.name) : null);
+    if (needsCare(c)) chip.append(el('span', { class: 'dot', 'aria-label': t('needsCare') }));
+    return chip;
+  });
+  if (offer.result !== 'max') {
+    const label = offer.result === 'ok' ? `+ ${offer.price}` : '+';
+    chips.push(el('button', { class: `cat-chip add ${offer.result === 'ok' ? 'ready' : ''}`, type: 'button', 'aria-label': t('catsAdd'), title: t('catsAdd') }, label));
+  }
+  row.replaceChildren(...chips);
+}
+
 // Re-labels everything for the current language and state.
 export function renderHud(state, now) {
   document.title = t('title');
-  $('cat-name').textContent = state.name;
-  $('cat-age').textContent = `${t('dayCount', { n: ageInDays(state, now) + 1 })} · ${t(`stage_${stageOf(state, now)}`)}`;
+  const cat = selectedCat(state);
+  $('cat-name').textContent = cat.name;
+  $('cat-age').textContent = `${t('dayCount', { n: ageInDays(cat, now) + 1 })} · ${t(`stage_${stageOf(cat, now)}`)}`;
+  renderCatChips(state, now);
   $('coins').textContent = state.coins;
 
   const ready = dailyTasks(now).filter((id) => {
@@ -95,7 +137,7 @@ export function renderHud(state, now) {
   $('settings-btn').setAttribute('aria-label', t('settings'));
 
   for (const key of STAT_KEYS) {
-    const value = Math.round(state.stats[key]);
+    const value = Math.round(cat.stats[key]);
     $(`label-${key}`).textContent = t(key);
     const bar = $(`bar-${key}`);
     bar.classList.toggle('low', value < 25);
@@ -172,7 +214,7 @@ export function openShop(state, { onBuy, onEquip }) {
     body.append(el('div', { class: 'section-title' }, t(`slot_${slot}`)));
     for (const item of SHOP_ITEMS.filter((i) => i.slot === slot)) {
       const owned = state.owned.includes(item.id);
-      const inUse = state.equipped[slot] === item.id;
+      const inUse = wornItem(state, slot) === item.id;
       const worn = slot === 'hat' || slot === 'collar';
       let action;
       if (!owned) {
@@ -269,22 +311,18 @@ export function openSettings(state, { onLang, onSound, onReset, onInvite, instal
     el('div', { class: 'section-title' }, t('resetTitle')),
     el('p', { class: 'note' }, t('resetNote')),
     analyticsEnabled ? el('p', { class: 'note' }, t('privacyNote')) : null,
-    el('button', { class: 'btn small', type: 'button', onclick: () => { if (confirm(t('resetConfirm', { name: state.name }))) onReset(); } }, t('resetButton')),
+    el('button', { class: 'btn small', type: 'button', onclick: () => { if (confirm(t('resetConfirm', { name: state.cats.map((c) => c.name).join(', ') }))) onReset(); } }, t('resetButton')),
   );
   openSheet(t('settings'), body);
 }
 
-function furPicker(previewState) {
+// Changes the fur of the kitten shown in the preview.
+function furPicker(kitten) {
   const buttons = Object.keys(FURS).map((fur) => {
-    const colors = FURS[fur];
-    const swatch = el('span', { class: 'swatch' });
-    swatch.style.background = colors.patch
-      ? `linear-gradient(135deg, ${colors.fur} 55%, ${colors.stripe} 55% 75%, ${colors.patch} 75%)`
-      : colors.fur;
-    swatch.style.borderColor = colors.outline;
-    const button = el('button', { class: `btn small fur ${fur === previewState.fur ? 'active' : ''}`, type: 'button', 'aria-label': t(`fur_${fur}`), title: t(`fur_${fur}`) }, swatch);
+    const swatch = furSwatch(fur);
+    const button = el('button', { class: `btn small fur ${fur === kitten.fur ? 'active' : ''}`, type: 'button', 'aria-label': t(`fur_${fur}`), title: t(`fur_${fur}`) }, swatch);
     button.addEventListener('click', () => {
-      previewState.fur = fur;
+      kitten.fur = fur;
       for (const b of buttons) b.classList.toggle('active', b === button);
     });
     return button;
@@ -292,7 +330,8 @@ function furPicker(previewState) {
   return el('div', { class: 'seg furs' }, buttons);
 }
 
-export function openAdopt(previewState, { lang, onLang, onAdopt }) {
+// The first kitten (locked sheet with a language switch), or a new kitten when `price` is given.
+export function openAdopt(previewState, { lang, onLang, onAdopt, price = null }) {
   const preview = el('canvas', { class: 'preview', width: ROOM_W, height: ROOM_H });
   const input = el('input', { type: 'text', maxlength: '16', placeholder: t('adoptPlaceholder'), 'aria-label': t('adoptPrompt'), enterkeyhint: 'done' });
   const submit = () => onAdopt(input.value.trim() || t('defaultName'));
@@ -308,13 +347,13 @@ export function openAdopt(previewState, { lang, onLang, onAdopt }) {
   const body = el('div', { class: 'list' },
     preview,
     el('div', { class: 'section-title' }, t('furLabel')),
-    furPicker(previewState),
+    furPicker(previewState.cats[0]),
     el('p', {}, t('adoptPrompt')),
     input,
-    el('button', { class: 'btn primary', type: 'button', onclick: submit }, t('adoptButton')),
-    languageSwitch(lang, onLang),
+    el('button', { class: 'btn primary', type: 'button', onclick: submit }, price === null ? t('adoptButton') : t('adoptFor', { n: price })),
+    price === null ? languageSwitch(lang, onLang) : null,
   );
-  openSheet(t('adoptTitle'), body, { locked: true, onClose: () => cancelAnimationFrame(raf) });
+  openSheet(t(price === null ? 'adoptTitle' : 'newCatTitle'), body, { locked: price === null, onClose: () => cancelAnimationFrame(raf) });
 }
 
 export function openFishGame(onFinish) {

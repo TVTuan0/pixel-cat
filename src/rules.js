@@ -1,53 +1,108 @@
 // Pure game rules. Every function takes a state and returns a new one.
+// Most actions are for the selected cat; cleaning and lights are for the whole room.
 import {
   HOUR, DAY, DECAY_PER_HOUR, SLEEP_ENERGY_PER_HOUR, LOW_STAT, HAPPY_AVERAGE,
   FULL_HUNGER, STAGES, PET_COOLDOWN_MS, PET_HAPPINESS, CLEAN_COINS_BELOW,
   CLEAN_COINS, PLAY_MIN_ENERGY, PLAY_ENERGY_COST, GIFT_BASE_COINS,
-  GIFT_STREAK_BONUS, GIFT_STREAK_CAP, FOODS, SHOP_ITEMS, EQUIP_SLOTS, WEATHER_CHANCE,
-  TASKS, TASKS_PER_DAY, STICKERS, LUNAR_DATES,
+  GIFT_STREAK_BONUS, GIFT_STREAK_CAP, FOODS, SHOP_ITEMS, WEATHER_CHANCE,
+  TASKS, TASKS_PER_DAY, STICKERS, LUNAR_DATES, MAX_CATS, NEW_CAT_PRICES, NEW_CAT_NEEDS_STAGE,
 } from './config.js';
 
 const clamp = (v) => Math.max(0, Math.min(100, v));
+const CAT_SLOTS = ['hat', 'collar']; // worn by one cat; wallpaper and floor belong to the room
 
-function withStats(state, changes) {
-  const stats = { ...state.stats };
+function withStats(cat, changes) {
+  const stats = { ...cat.stats };
   for (const [key, delta] of Object.entries(changes)) stats[key] = clamp(stats[key] + delta);
-  return { ...state, stats };
+  return { ...cat, stats };
+}
+
+export function selectedCat(state) {
+  return state.cats.find((c) => c.id === state.selected) ?? state.cats[0];
+}
+
+// Applies `change` to one cat (the selected one by default).
+function updateCat(state, change, id = selectedCat(state).id) {
+  return { ...state, cats: state.cats.map((c) => (c.id === id ? change(c) : c)) };
+}
+
+export function newCat(id, name, fur, now) {
+  return {
+    id,
+    name,
+    fur,
+    adoptedAt: now,
+    stats: { hunger: 80, happiness: 80, energy: 80, cleanliness: 100 },
+    lastPetAt: 0,
+    seenStage: 'kitten',
+    equipped: { hat: null, collar: null },
+  };
 }
 
 export function applyElapsed(state, now) {
   const hours = Math.max(0, now - state.lastSeen) / HOUR;
   const energyChange = state.asleep ? SLEEP_ENERGY_PER_HOUR : -DECAY_PER_HOUR.energy;
-  const next = withStats(state, {
+  const cats = state.cats.map((cat) => withStats(cat, {
     hunger: -DECAY_PER_HOUR.hunger * hours,
     happiness: -DECAY_PER_HOUR.happiness * hours,
     energy: energyChange * hours,
     cleanliness: -DECAY_PER_HOUR.cleanliness * hours,
-  });
-  return { ...next, lastSeen: Math.max(now, state.lastSeen) };
+  }));
+  return { ...state, cats, lastSeen: Math.max(now, state.lastSeen) };
 }
 
 const LOW_NEED_MOOD = { hunger: 'hungry', energy: 'sleepy', cleanliness: 'dirty', happiness: 'grumpy' };
 
-export function moodOf(state) {
+// Mood of a cat (the selected one by default).
+export function moodOf(state, cat = selectedCat(state)) {
   if (state.asleep) return 'sleeping';
-  const low = Object.keys(LOW_NEED_MOOD).filter((k) => state.stats[k] < LOW_STAT);
+  const low = Object.keys(LOW_NEED_MOOD).filter((k) => cat.stats[k] < LOW_STAT);
   if (low.length > 1) return 'grumpy';
   if (low.length === 1) return LOW_NEED_MOOD[low[0]];
-  const values = Object.values(state.stats);
+  const values = Object.values(cat.stats);
   const average = values.reduce((a, b) => a + b, 0) / values.length;
   return average >= HAPPY_AVERAGE ? 'happy' : 'okay';
 }
 
-export function ageInDays(state, now) {
-  return Math.floor(Math.max(0, now - state.adoptedAt) / DAY);
+export function needsCare(cat) {
+  return Object.values(cat.stats).some((v) => v < LOW_STAT);
 }
 
-export function stageOf(state, now) {
-  const days = ageInDays(state, now);
+export function ageInDays(cat, now) {
+  return Math.floor(Math.max(0, now - cat.adoptedAt) / DAY);
+}
+
+export function stageOf(cat, now) {
+  const days = ageInDays(cat, now);
   let stage = STAGES[0].id;
   for (const s of STAGES) if (days >= s.fromDay) stage = s.id;
   return stage;
+}
+
+const stageIndex = (stage) => STAGES.findIndex((s) => s.id === stage);
+
+export function selectCat(state, id) {
+  return state.cats.some((c) => c.id === id) ? { ...state, selected: id } : state;
+}
+
+// Can the player adopt another cat? result: ok | max | growing (newest cat still a kitten) | poor.
+export function nextCatOffer(state, now) {
+  if (state.cats.length >= MAX_CATS) return { result: 'max' };
+  const price = NEW_CAT_PRICES[state.cats.length - 1];
+  const newest = state.cats[state.cats.length - 1];
+  if (stageIndex(stageOf(newest, now)) < stageIndex(NEW_CAT_NEEDS_STAGE)) return { result: 'growing', price, waitFor: newest.name };
+  if (state.coins < price) return { result: 'poor', price };
+  return { result: 'ok', price };
+}
+
+export function adoptCat(state, name, fur, now) {
+  const offer = nextCatOffer(state, now);
+  if (offer.result !== 'ok') return { state, result: offer.result };
+  const id = Math.max(...state.cats.map((c) => c.id)) + 1;
+  return {
+    state: { ...state, coins: state.coins - offer.price, cats: [...state.cats, newCat(id, name, fur, now)], selected: id },
+    result: 'ok',
+  };
 }
 
 export function dayKey(time) {
@@ -59,23 +114,25 @@ export function dayKey(time) {
 export function feed(state, foodId) {
   const food = FOODS.find((f) => f.id === foodId);
   if (state.asleep) return { state, result: 'asleep' };
-  if (state.stats.hunger >= FULL_HUNGER) return { state, result: 'full' };
+  if (selectedCat(state).stats.hunger >= FULL_HUNGER) return { state, result: 'full' };
   if (state.coins < food.price) return { state, result: 'poor' };
-  const fed = withStats(state, { hunger: food.hunger, happiness: food.happiness });
+  const fed = updateCat(state, (c) => withStats(c, { hunger: food.hunger, happiness: food.happiness }));
   return { state: { ...fed, coins: state.coins - food.price + food.coins }, result: 'ok' };
 }
 
-export function pet(state, now) {
+export function pet(state, now, id = selectedCat(state).id) {
   if (state.asleep) return { state, result: 'asleep' };
-  if (now - state.lastPetAt < PET_COOLDOWN_MS) return { state, result: 'cooldown' };
-  const petted = withStats(state, { happiness: PET_HAPPINESS });
-  return { state: { ...petted, lastPetAt: now }, result: 'ok' };
+  const cat = state.cats.find((c) => c.id === id);
+  if (now - cat.lastPetAt < PET_COOLDOWN_MS) return { state, result: 'cooldown' };
+  return { state: updateCat(state, (c) => ({ ...withStats(c, { happiness: PET_HAPPINESS }), lastPetAt: now }), id), result: 'ok' };
 }
 
+// The litter box is shared, so cleaning helps every cat.
 export function clean(state) {
-  const paid = state.stats.cleanliness < CLEAN_COINS_BELOW ? CLEAN_COINS : 0;
-  const cleaned = withStats(state, { cleanliness: 100 });
-  return { state: { ...cleaned, coins: state.coins + paid }, result: 'ok', coins: paid };
+  const dirtiest = Math.min(...state.cats.map((c) => c.stats.cleanliness));
+  const paid = dirtiest < CLEAN_COINS_BELOW ? CLEAN_COINS : 0;
+  const cats = state.cats.map((c) => withStats(c, { cleanliness: 100 }));
+  return { state: { ...state, cats, coins: state.coins + paid }, result: 'ok', coins: paid };
 }
 
 export function toggleSleep(state) {
@@ -84,16 +141,27 @@ export function toggleSleep(state) {
 
 export function canPlay(state) {
   if (state.asleep) return 'asleep';
-  if (state.stats.energy < PLAY_MIN_ENERGY) return 'tired';
+  if (selectedCat(state).stats.energy < PLAY_MIN_ENERGY) return 'tired';
   return 'ok';
 }
 
 export function finishFishGame(state, caught) {
-  const played = withStats(state, {
+  const played = updateCat(state, (c) => withStats(c, {
     happiness: Math.min(30, 10 + caught * 2),
     energy: -PLAY_ENERGY_COST,
-  });
+  }));
   return { state: { ...played, coins: state.coins + caught }, result: 'ok' };
+}
+
+// Puts an item on: a hat or collar on the selected cat, or a wallpaper or floor on the room.
+function wear(state, item, itemId) {
+  if (CAT_SLOTS.includes(item.slot)) return updateCat(state, (c) => ({ ...c, equipped: { ...c.equipped, [item.slot]: itemId } }));
+  if (item.slot === 'wall' || item.slot === 'floor') return { ...state, equipped: { ...state.equipped, [item.slot]: itemId } };
+  return state;
+}
+
+export function wornItem(state, slot) {
+  return CAT_SLOTS.includes(slot) ? selectedCat(state).equipped[slot] : state.equipped[slot];
 }
 
 export function buy(state, itemId) {
@@ -101,16 +169,14 @@ export function buy(state, itemId) {
   if (state.owned.includes(itemId)) return { state, result: 'owned' };
   if (state.coins < item.price) return { state, result: 'poor' };
   const bought = { ...state, coins: state.coins - item.price, owned: [...state.owned, itemId] };
-  const equipped = EQUIP_SLOTS.includes(item.slot) ? { ...state.equipped, [item.slot]: itemId } : state.equipped;
-  return { state: { ...bought, equipped }, result: 'ok' };
+  return { state: wear(bought, item, itemId), result: 'ok' };
 }
 
 // Uses an owned one-at-a-time item (hat, collar, wallpaper, floor), or stops using it.
 export function equip(state, itemId) {
   const item = SHOP_ITEMS.find((i) => i.id === itemId);
   if (!state.owned.includes(itemId)) return state;
-  const current = state.equipped[item.slot];
-  return { ...state, equipped: { ...state.equipped, [item.slot]: current === itemId ? null : itemId } };
+  return wear(state, item, wornItem(state, item.slot) === itemId ? null : itemId);
 }
 
 export function claimDailyGift(state, now) {
@@ -182,7 +248,8 @@ function stickerEarned(sticker, state, time) {
   switch (sticker.kind) {
     case 'counter': return (state.counters?.[sticker.counter] ?? 0) >= sticker.goal;
     case 'streak': return state.streak >= sticker.goal;
-    case 'stage': return STAGES.findIndex((s) => s.id === stageOf(state, time)) >= STAGES.findIndex((s) => s.id === sticker.stage);
+    case 'stage': return state.cats.some((c) => stageIndex(stageOf(c, time)) >= stageIndex(sticker.stage));
+    case 'cats': return state.cats.length >= sticker.goal;
     case 'owned': return state.owned.length >= sticker.goal;
     case 'ownsAll': return SHOP_ITEMS.filter((i) => i.slot === sticker.slot).every((i) => state.owned.includes(i.id));
     default: return false;

@@ -1,7 +1,7 @@
 // All tunable game numbers live here.
 
 export const SAVE_KEY = 'pixel-cat-save';
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2; // 2: several cats (version 1 saves are upgraded on load)
 
 export const HOUR = 60 * 60 * 1000;
 export const DAY = 24 * HOUR;
@@ -107,6 +107,8 @@ export const STICKERS = [
   { id: 'adult', kind: 'stage', stage: 'adult', coins: 20, icon: 'hat_crown' },
   { id: 'shopper', kind: 'owned', goal: 5, coins: 10, icon: 'bag' },
   { id: 'decorator', kind: 'ownsAll', slot: 'wall', coins: 20, icon: 'wall_stripes' },
+  { id: 'family', kind: 'cats', goal: 3, coins: 20, icon: 'paw' },
+  { id: 'cat_house', kind: 'cats', goal: 5, coins: 50, icon: 'star' },
 ];
 
 // Seasonal decorations. Tết and Mid-Autumn follow the lunar calendar, so their dates are listed per year.
@@ -116,3 +118,8 @@ export const LUNAR_DATES = {
 };
 
 export const CLIP_SECONDS = 6;
+
+// More cats: up to MAX_CATS. The next kitten can join once the newest cat is a young cat, for a price.
+export const MAX_CATS = 5;
+export const NEW_CAT_PRICES = [50, 100, 150, 200]; // 2nd, 3rd, 4th, 5th cat
+export const NEW_CAT_NEEDS_STAGE = 'young';

@@ -161,6 +161,14 @@ export const SPRITES = {
     colors: { o: '#8a5a2a', y: '#e8c35a' },
     rows: ['.......o.', '......o..', '.....o...', '....o....', '...o.....', '..yyy....', '.yyyyy...', 'yyyyyy...', 'yyyyy....', 'yyyy.....'],
   },
+  arrow: {
+    colors: { y: '#ffd84a', o: '#7a5a00' },
+    rows: ['ooooo', 'oyyyo', '.oyo.', '..o..'],
+  },
+  paw: {
+    colors: { p: '#ff8fa3', o: '#7a2e45' },
+    rows: ['.o.o.o.', 'opopopo', '.o.o.o.', '..ooo..', '.opppo.', 'opppppo', '.ooooo.'],
+  },
   star: {
     colors: { y: '#ffd84a', o: '#b8860b' },
     rows: ['...o...', '..oyo..', 'oooyooo', 'oyyyyyo', '.oyyyo.', 'oyo.oyo', 'oo...oo'],

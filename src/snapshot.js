@@ -10,7 +10,7 @@ export async function makeCard(state, { title, caption }) {
   const room = document.createElement('canvas');
   room.width = ROOM_W;
   room.height = ROOM_H;
-  drawScene(room.getContext('2d'), state, performance.now(), Date.now());
+  drawScene(room.getContext('2d'), state, performance.now(), Date.now(), { live: true, marker: false });
 
   const card = document.createElement('canvas');
   card.width = ROOM_W * SCALE + PAD * 2;

@@ -14,7 +14,13 @@ export const SPOTS = {
   fishbowl: { x: 111, g: 104, weight: 2, needs: 'decor_fishbowl' },
   beanbag: { x: 102, g: 101, weight: 2, needs: 'decor_beanbag' },
   yarn: { x: 92, g: 112, weight: 2, needs: 'toy_yarn' },
+  front: { x: 54, g: 117, weight: 1 },
+  right: { x: 124, g: 115, weight: 1 },
 };
 
 // A spot is "up high" when the cat must jump to reach it.
 export const isHigh = (g) => g < FLOOR_G - 15;
+
+// Where cats sit when the page opens, and where they curl up at night, in cat order.
+export const START_SPOTS = ['center', 'sofa', 'tree', 'right', 'front'];
+export const SLEEP_SPOTS = ['bed', 'sofa', 'beanbag', 'tree', 'front', 'right', 'center'];

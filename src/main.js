@@ -3,9 +3,10 @@ import { createState, loadState, saveState, clearState } from './state.js';
 import {
   applyElapsed, feed, pet, clean, toggleSleep, canPlay, finishFishGame,
   buy, equip, claimDailyGift, stageOf, ageInDays, recordAction, claimTask, checkStickers,
+  selectCat, nextCatOffer, adoptCat,
 } from './rules.js';
 import { FOODS, STICKERS, CLIP_SECONDS } from './config.js';
-import { drawScene, playEffect, isOnCat, stepCat, feedCat, resetCat } from './render/canvas.js';
+import { drawScene, playEffect, playCatEffect, catAt, stepCats, feedCat, resetCats } from './render/canvas.js';
 import { spriteCanvas } from './render/sprites.js';
 import { setSoundEnabled, sfx } from './sound.js';
 import { makeCard, shareCard, shareLink, shareFile } from './snapshot.js';
@@ -63,7 +64,7 @@ const handlers = {
       closeSheet();
       if (r.result === 'full') return result(t('feedFull'), sfx.no);
       commit(r.state);
-      feedCat();
+      feedCat(state.selected);
       result(t('feedOk'), sfx.eat);
       const isTreat = FOODS.find((f) => f.id === foodId).price > 0;
       record(['feed', 1], ...(isTreat ? [['treat', 1]] : []));
@@ -80,7 +81,7 @@ const handlers = {
         record(['play', 1], ['fish', caught]);
         track('fish_game');
         sfx.coin();
-        playEffect('hop', 500);
+        playCatEffect('hop', state.selected, 500);
         return caught;
       },
     });
@@ -158,31 +159,65 @@ const handlers = {
     });
   },
 
+  selectCat(id) {
+    commit(selectCat(state, id));
+    sfx.tap();
+  },
+
+  addCat() {
+    const now = Date.now();
+    const offer = nextCatOffer(state, now);
+    if (offer.result === 'growing') return result(t('nextCatGrowing', { name: offer.waitFor }), sfx.no);
+    if (offer.result === 'poor') return result(t('nextCatPoor', { n: offer.price }), sfx.no);
+    if (offer.result !== 'ok') return;
+    const preview = createState('', now, state.lang);
+    openAdopt(preview, {
+      lang: state.lang,
+      price: offer.price,
+      onAdopt: (name) => {
+        const r = adoptCat(state, name, preview.cats[0].fur, Date.now());
+        if (r.result !== 'ok') return;
+        closeSheet();
+        commit(r.state);
+        track('adopt_more');
+        say(t('newCatHello', { name }), 2500);
+        sfx.meow();
+        awardStickers();
+      },
+    });
+  },
+
   tapRoom(x, y) {
-    if (!state || !isOnCat(x, y)) return;
-    const r = pet(state, Date.now());
+    const id = state && catAt(x, y);
+    if (!id) return;
+    if (id !== state.selected) commit(selectCat(state, id));
+    const r = pet(state, Date.now(), id);
     if (r.result === 'asleep') return say(t('asleep'));
     if (r.result === 'ok') {
       commit(r.state);
       record(['pet', 1]);
     }
-    playEffect('purr', 1500);
+    playCatEffect('purr', id, 1500);
     result(t('petOk'), sfx.purr);
   },
 };
 
+// "Mochi · Young cat · Day 5" for one cat; just the names when there are several.
 function shareCaption() {
   const now = Date.now();
-  return t('shareCard', { name: state.name, stage: t(`stage_${stageOf(state, now)}`), n: ageInDays(state, now) + 1 });
+  if (state.cats.length > 1) return catNames();
+  const cat = state.cats[0];
+  return t('shareCard', { name: cat.name, stage: t(`stage_${stageOf(cat, now)}`), n: ageInDays(cat, now) + 1 });
 }
 
-const fileBase = () => `${state.name.replace(/[^\p{L}\p{N}_-]+/gu, '-') || 'cat'}-pixel-cat`;
+const catNames = () => state.cats.map((c) => c.name).join(' & ');
+const fileBase = () => `${state.cats[0].name.replace(/[^\p{L}\p{N}_-]+/gu, '-') || 'cat'}-pixel-cat`;
 
 async function sharePhoto() {
   closeSheet();
   const card = await makeCard(state, { title: t('title'), caption: shareCaption() });
   track('share_card');
-  await shareCard(card, { fileName: `${fileBase()}.png`, text: t('shareText', { name: state.name }) });
+  await shareCard(card, { fileName: `${fileBase()}.png`, text: t('shareText', { name: catNames() }) });
 }
 
 let recording = false;
@@ -203,9 +238,9 @@ async function shareVideo() {
     const video = document.createElement('video');
     Object.assign(video, { src: url, autoplay: true, loop: true, muted: true, playsInline: true, className: 'clip-preview' });
     const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
-    await showMessage(t('clipReady'), t('shareText', { name: state.name }), video, {
+    await showMessage(t('clipReady'), t('shareText', { name: catNames() }), video, {
       label: t('shareVideo'),
-      onClick: () => shareFile(blob, { fileName: `${fileBase()}.${ext}`, text: t('shareText', { name: state.name }) }),
+      onClick: () => shareFile(blob, { fileName: `${fileBase()}.${ext}`, text: t('shareText', { name: catNames() }) }),
     });
     URL.revokeObjectURL(url);
   } catch {
@@ -241,17 +276,18 @@ async function checkEvents() {
   const gift = claimDailyGift(state, now);
   if (gift.coins) {
     // The gift comes once per day, so this is a good moment to count day-2 and day-7 returns.
-    const day = ageInDays(state, now) + 1;
+    const day = ageInDays(state.cats[0], now) + 1;
     if (day === 2 || day === 7) track(`return_day${day}`);
     commit(gift.state);
     sfx.coin();
     await showMessage(t('giftTitle'), t('giftBody', { n: gift.coins, s: gift.state.streak }), spriteCanvas('coin', 10));
   }
-  const stage = stageOf(state, now);
-  if (stage !== state.seenStage) {
-    commit({ ...state, seenStage: stage });
+  const grown = state.cats.find((c) => stageOf(c, now) !== c.seenStage);
+  if (grown) {
+    const stage = stageOf(grown, now);
+    commit({ ...state, cats: state.cats.map((c) => (c.id === grown.id ? { ...c, seenStage: stage } : c)) });
     sfx.fanfare();
-    await showMessage(t('grewTitle', { name: state.name }), t('grewBody', { stage: t(`stage_${stage}`) }), catPreview(state), {
+    await showMessage(t('grewTitle', { name: grown.name }), t('grewBody', { stage: t(`stage_${stage}`) }), catPreview(state), {
       label: t('inviteButton'),
       onClick: invite,
     });
@@ -270,8 +306,8 @@ function tick() {
 function frame(now) {
   const shown = state ?? previewState;
   if (shown) {
-    if (state) stepCat(state, now);
-    const mood = drawScene(ctx, shown, now, Date.now());
+    if (state) stepCats(state, now);
+    const mood = drawScene(ctx, shown, now, Date.now(), { live: Boolean(state) });
     if (state) showMood(t(`mood_${mood}`));
   }
   requestAnimationFrame(frame);
@@ -283,12 +319,12 @@ function startAdopt(lang, fur = 'orange') {
   renderHud(previewState, Date.now());
   openAdopt(previewState, {
     lang,
-    onLang: (next) => startAdopt(next, previewState.fur),
+    onLang: (next) => startAdopt(next, previewState.cats[0].fur),
     onAdopt: (name) => {
       closeSheet();
-      commit(createState(name, Date.now(), lang, previewState.fur));
+      commit(createState(name, Date.now(), lang, previewState.cats[0].fur));
       track('adopt');
-      resetCat(state);
+      resetCats(state);
       say(t('mood_happy'), 2500);
       sfx.meow();
       checkEvents();
@@ -304,7 +340,7 @@ function boot() {
     setLanguage(state.lang);
     setSoundEnabled(state.sound);
     commit(state);
-    resetCat(state);
+    resetCats(state);
     checkEvents();
   } else {
     startAdopt(guessLanguage());

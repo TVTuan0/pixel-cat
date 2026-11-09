@@ -158,4 +158,15 @@ export default {
   recording: 'Recording... {n}s',
   clipReady: 'Your clip is ready!',
   clipFailed: "Couldn't record a video here.",
+
+  sticker_family: 'Family (3 cats)',
+  sticker_cat_house: 'Cat house (5 cats)',
+
+  catsAdd: 'Adopt another cat',
+  newCatTitle: 'A new kitten!',
+  adoptFor: 'Adopt for {n} coins',
+  nextCatGrowing: '{name} needs to grow into a young cat first.',
+  nextCatPoor: 'A new kitten costs {n} coins.',
+  newCatHello: '{name} joined the family!',
+  needsCare: 'Needs care',
 };

@@ -158,4 +158,15 @@ export default {
   recording: 'Đang quay... {n}s',
   clipReady: 'Video đã xong!',
   clipFailed: 'Không quay được video ở đây.',
+
+  sticker_family: 'Gia đình (3 mèo)',
+  sticker_cat_house: 'Nhà mèo (5 mèo)',
+
+  catsAdd: 'Nhận nuôi thêm mèo',
+  newCatTitle: 'Thêm một bé mèo!',
+  adoptFor: 'Nhận nuôi với {n} xu',
+  nextCatGrowing: '{name} cần lớn thành mèo nhỡ trước đã.',
+  nextCatPoor: 'Mèo con mới cần {n} xu.',
+  newCatHello: '{name} đã về nhà!',
+  needsCare: 'Cần chăm sóc',
 };

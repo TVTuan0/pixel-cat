@@ -388,7 +388,7 @@ export function drawRoom(ctx, state, now, clock) {
   if (active('bowlFull', now) || active('eat', now)) {
     for (let i = 0; i < 3; i++) rect(ctx, 52 + i * 2, 104 + (i % 2), 2, 2, '#b06a3b');
   }
-  drawLitter(ctx, state.stats.cleanliness, now);
+  drawLitter(ctx, Math.min(...state.cats.map((c) => c.stats.cleanliness)), now);
   if (owned.has('toy_yarn')) drawSprite(ctx, 'toy_yarn', 80, 108);
   if (owned.has('toy_mouse')) drawSprite(ctx, 'toy_mouse', 122, 112, Math.floor(now / 2000) % 2 === 0);
 }

@@ -37,7 +37,7 @@ Note: a cat adopted on itch.io lives separately from one adopted on the main sit
 >
 > Adopt a kitten, pick its fur and give it a name. Feed it, pet it, clean its litter box and turn off the lights at bedtime. It walks around its room, naps on the sofa and climbs its cat tree.
 >
-> Come back every day: your cat grows from kitten to adult, you get a daily gift and new daily tasks, and there are 12 stickers to collect. Play Fish Catch to earn coins for hats, collars, toys, wallpapers and furniture.
+> Come back every day: your cat grows from kitten to adult, and once it has grown a little you can adopt more kittens, up to 5 cats sharing one cozy room. You get a daily gift and new daily tasks, and there are 14 stickers to collect. Play Fish Catch to earn coins for hats, collars, toys, wallpapers and furniture.
 >
 > The weather outside changes daily, the clock shows your real time, and the room decorates itself for Tết, Mid-Autumn, Halloween and Christmas.
 >
@@ -49,7 +49,7 @@ Note: a cat adopted on itch.io lives separately from one adopted on the main sit
 >
 > Nhận nuôi mèo con, chọn màu lông và đặt tên. Cho mèo ăn, vuốt ve, dọn hộp cát và tắt đèn khi tới giờ ngủ. Mèo tự đi dạo trong phòng, ngủ trên sofa và leo trụ cào.
 >
-> Ghé chơi mỗi ngày: mèo lớn dần từ mèo con thành mèo lớn, có quà mỗi ngày, nhiệm vụ mới mỗi ngày và 12 nhãn dán để sưu tầm. Chơi Bắt Cá để kiếm xu mua mũ, vòng cổ, đồ chơi, giấy dán tường và nội thất.
+> Ghé chơi mỗi ngày: mèo lớn dần từ mèo con thành mèo lớn, rồi bạn có thể nhận nuôi thêm, tối đa 5 bé mèo chung một căn phòng. Có quà mỗi ngày, nhiệm vụ mới mỗi ngày và 14 nhãn dán để sưu tầm. Chơi Bắt Cá để kiếm xu mua mũ, vòng cổ, đồ chơi, giấy dán tường và nội thất.
 >
 > Thời tiết ngoài cửa sổ đổi theo ngày, đồng hồ chạy theo giờ thật, và căn phòng tự trang trí dịp Tết, Trung Thu, Halloween và Giáng Sinh.
 >
