@@ -1,0 +1,38 @@
+# Deploys the game to Vercel production on every push to main.
+# Needs repo secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID.
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # A broken build never reaches players.
+      - run: npm test
+
+      - name: Deploy
+        run: |
+          npx vercel@65.12.1 pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx vercel@65.12.1 build --prod --token="$VERCEL_TOKEN"
+          npx vercel@65.12.1 deploy --prebuilt --prod --token="$VERCEL_TOKEN"
