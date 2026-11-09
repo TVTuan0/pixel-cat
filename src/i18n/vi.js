@@ -119,4 +119,5 @@ export default {
   inviteText: 'Nuôi mèo pixel cùng mình nha!',
   linkCopied: 'Đã sao chép link!',
   linkFailed: 'Không chia sẻ được link.',
+  privacyNote: 'Chúng mình chỉ đếm lượt chơi ẩn danh: không cookie, không dữ liệu cá nhân.',
 };

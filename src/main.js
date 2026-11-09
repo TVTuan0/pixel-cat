@@ -8,6 +8,7 @@ import { drawScene, playEffect, isOnCat, stepCat, feedCat, resetCat } from './re
 import { spriteCanvas } from './render/sprites.js';
 import { setSoundEnabled, sfx } from './sound.js';
 import { makeCard, shareCard, shareLink } from './snapshot.js';
+import { startAnalytics, track } from './analytics.js';
 import {
   initUI, renderHud, say, showMood, closeSheet, isSheetOpen, openFeed, openShop,
   openSettings, openAdopt, openFishGame, showMessage, catPreview,
@@ -54,6 +55,7 @@ const handlers = {
       onCatch: sfx.catch,
       onEnd: (caught) => {
         commit(finishFishGame(state, caught).state);
+        track('fish_game');
         sfx.coin();
         playEffect('hop', 500);
         return caught;
@@ -80,6 +82,7 @@ const handlers = {
         const r = buy(state, id);
         if (r.result !== 'ok') return result(t('poor'), sfx.no);
         commit(r.state);
+        track(`buy_${id}`);
         sfx.coin();
         say(t('bought'));
         reopen();
@@ -100,6 +103,7 @@ const handlers = {
       caption: t('shareCard', { name: state.name, stage, n: ageInDays(state, now) + 1 }),
     });
     const safeName = state.name.replace(/[^\p{L}\p{N}_-]+/gu, '-') || 'cat';
+    track('share_card');
     await shareCard(card, { fileName: `${safeName}-pixel-cat.png`, text: t('shareText', { name: state.name }) });
   },
 
@@ -133,6 +137,7 @@ const handlers = {
 };
 
 async function invite() {
+  track('invite');
   const outcome = await shareLink(t('inviteText'));
   if (outcome === 'copied') say(t('linkCopied'));
   if (outcome === 'failed') say(t('linkFailed'));
@@ -156,6 +161,9 @@ async function checkEvents() {
   const now = Date.now();
   const gift = claimDailyGift(state, now);
   if (gift.coins) {
+    // The gift comes once per day, so this is a good moment to count day-2 and day-7 returns.
+    const day = ageInDays(state, now) + 1;
+    if (day === 2 || day === 7) track(`return_day${day}`);
     commit(gift.state);
     sfx.coin();
     await showMessage(t('giftTitle'), t('giftBody', { n: gift.coins, s: gift.state.streak }), spriteCanvas('coin', 10));
@@ -199,6 +207,7 @@ function startAdopt(lang, fur = 'orange') {
     onAdopt: (name) => {
       closeSheet();
       commit(createState(name, Date.now(), lang, previewState.fur));
+      track('adopt');
       resetCat(state);
       say(t('mood_happy'), 2500);
       sfx.meow();
@@ -208,6 +217,7 @@ function startAdopt(lang, fur = 'orange') {
 }
 
 function boot() {
+  startAnalytics();
   initUI(handlers);
   if (state) {
     setLanguage(state.lang);

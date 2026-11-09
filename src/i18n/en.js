@@ -119,4 +119,5 @@ export default {
   inviteText: 'Come raise a pixel cat with me!',
   linkCopied: 'Link copied!',
   linkFailed: 'Could not share the link.',
+  privacyNote: 'We count visits anonymously: no cookies, no personal data.',
 };

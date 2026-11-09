@@ -1,5 +1,6 @@
 // DOM: top bar, stat bars, buttons, speech bubble and bottom sheets.
 import { t } from './i18n/index.js';
+import { analyticsEnabled } from './analytics.js';
 import { spriteCanvas, FURS } from './render/sprites.js';
 import { drawScene, ROOM_W, ROOM_H } from './render/canvas.js';
 import { runFishGame, drawFishGameIdle } from './minigame/fish.js';
@@ -202,6 +203,7 @@ export function openSettings(state, { onLang, onSound, onReset, onInvite }) {
     ),
     el('div', { class: 'section-title' }, t('resetTitle')),
     el('p', { class: 'note' }, t('resetNote')),
+    analyticsEnabled ? el('p', { class: 'note' }, t('privacyNote')) : null,
     el('button', { class: 'btn small', type: 'button', onclick: () => { if (confirm(t('resetConfirm', { name: state.name }))) onReset(); } }, t('resetButton')),
   );
   openSheet(t('settings'), body);
