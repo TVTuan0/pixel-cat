@@ -13,6 +13,8 @@ Live game: https://pixel-cat-green.vercel.app
 | `images/2-adopt.png` | Screenshot: choosing fur when adopting |
 | `images/3-tasks.png` | Screenshot: daily tasks and sticker book |
 | `images/4-seasons.png` | Screenshot: seasonal decorations (Tết, Mid-Autumn, Halloween, Christmas) |
+| `images/5-contest.png` | Screenshot: a "Which is cuter?" duel in the weekly contest |
+| `images/6-contest-winners.png` | Screenshot: the contest screen with last week's winners |
 | `../../public/og.png` | Link preview picture (1200×630), already used by the site |
 
 For a video, open the game, tap **Share → Video clip**. It records a 6-second vertical clip, ready for TikTok or Reels.
@@ -29,7 +31,7 @@ For a video, open the game, tap **Share → Video clip**. It records a 6-second 
    - Pricing: **No payments** (or "donations")
 3. Cover image and screenshots: from the table above.
 
-Note: a cat adopted on itch.io lives separately from one adopted on the main site. They are different websites, so each keeps its own save.
+Note: a cat adopted on itch.io lives separately from one adopted on the main site. They are different websites, so each keeps its own save. The weekly contest only runs on the main site, so the itch.io page text points players there.
 
 ### Page text (English)
 
@@ -40,6 +42,8 @@ Note: a cat adopted on itch.io lives separately from one adopted on the main sit
 > Come back every day: your cat grows from kitten to adult, and once it has grown a little you can adopt more kittens, up to 5 cats sharing one cozy room. You get a daily gift and new daily tasks, and there are 14 stickers to collect. Play Fish Catch to earn coins for hats, collars, toys, wallpapers and furniture.
 >
 > The weather outside changes daily, the clock shows your real time, and the room decorates itself for Tết, Mid-Autumn, Halloween and Christmas.
+>
+> **Weekly Cutest Room Contest:** enter your room and vote in "Which is cuter?" duels. The top 3 each week win a gold, silver or bronze trophy for their shelf. Join at pixel-cat-green.vercel.app.
 >
 > Works on phones and computers, in English and Vietnamese. No sign-up, no ads.
 
@@ -53,6 +57,8 @@ Note: a cat adopted on itch.io lives separately from one adopted on the main sit
 >
 > Thời tiết ngoài cửa sổ đổi theo ngày, đồng hồ chạy theo giờ thật, và căn phòng tự trang trí dịp Tết, Trung Thu, Halloween và Giáng Sinh.
 >
+> **Cuộc thi Phòng Mèo Dễ Thương mỗi tuần:** đăng ký phòng của bạn và bình chọn "Phòng nào dễ thương hơn?". Top 3 mỗi tuần nhận cúp vàng, bạc hoặc đồng đặt trên kệ. Tham gia tại pixel-cat-green.vercel.app.
+>
 > Chơi được trên điện thoại và máy tính, có tiếng Việt và tiếng Anh. Không cần đăng ký, không quảng cáo.
 
 ## Reddit
@@ -61,11 +67,32 @@ Good places: r/WebGames, r/incremental_games (as a "cozy idle" game), r/IndieGam
 
 > **I made a tiny pixel cat you can raise in your browser**
 >
-> No sign-up, works on phones. Your kitten walks around its room, grows up over a week, and the room decorates itself for holidays. There's a little fish-catching game to earn hats and furniture.
+> No sign-up, works on phones. Your kitten walks around its room, grows up over a week, and the room decorates itself for holidays. There's a little fish-catching game to earn hats and furniture, and a weekly contest where players vote for the cutest room.
 >
 > https://pixel-cat-green.vercel.app
 >
 > I'd love feedback on what would make you come back tomorrow.
+
+## Weekly contest
+
+The contest runs Monday to Sunday (UTC). In Vietnam that is Monday 7:00 to the next Monday 7:00. Duels need at least 3 rooms, because players never see their own, so ask a few friends to enter early each week. A simple weekly rhythm:
+
+| When | Post | Image |
+|------|------|-------|
+| Monday | "New contest week! Enter your cat's room and vote for the cutest." | `5-contest.png` or a clip of your room |
+| Thursday | "Halfway there – how many rooms can you judge?" | a duel screenshot |
+| Sunday | "Last day to vote!" | a clip |
+| Next Monday | "This week's winners" | a screenshot of the winners on the contest screen |
+
+Post text, English:
+
+> 🏆 **Cutest Room Contest is on!** Decorate your pixel cat's room, tap Enter, then vote in "Which is cuter?" duels. Top 3 win a trophy for their shelf. Ends Sunday. pixel-cat-green.vercel.app
+
+Post text, Vietnamese:
+
+> 🏆 **Cuộc thi Phòng Mèo Dễ Thương bắt đầu rồi!** Trang trí phòng cho mèo pixel, bấm Đăng ký rồi bình chọn "Phòng nào dễ thương hơn?". Top 3 nhận cúp đặt trên kệ. Kết thúc Chủ Nhật. pixel-cat-green.vercel.app
+
+Only cat names and rooms are public. Players with a rude cat name show up as "Cat".
 
 ## TikTok / Reels / Facebook
 
@@ -75,6 +102,8 @@ Record clips in the game (**Share → Video clip**). Ideas that work well:
 - Room makeover: a plain room, then the same room fully decorated.
 - "My cat's Tết room" during the season, when the lanterns and apricot blossom appear.
 - Lights off at bedtime: the cat walks to its bed and curls up.
+- Contest entry: "Vote for my room this week!", a clip of your decorated room with all your cats.
+- Winners reveal: the trophy appearing on the shelf after a win.
 
 Caption idea: `Nuôi mèo pixel mỗi ngày 🐱 link ở bio · pixel-cat-green.vercel.app #pixelart #meo #cozygames`
 
@@ -84,6 +113,6 @@ Counting is off until a GoatCounter code is set. To turn it on:
 
 1. Make a free account at https://www.goatcounter.com and pick a code (for example `pixelcat`).
 2. In Vercel: project **pixel-cat** → Settings → Environment Variables → add `VITE_GOATCOUNTER_CODE` = your code, for **Production**.
-3. Deploy again. Visits and these events then show in GoatCounter: `adopt`, `return_day2`, `return_day7`, `share_card`, `clip`, `invite`, `install`, `fish_game`, `task_done`, `sticker`, `buy_<item>`.
+3. Deploy again. Visits and these events then show in GoatCounter: `adopt`, `return_day2`, `return_day7`, `share_card`, `clip`, `invite`, `install`, `fish_game`, `task_done`, `sticker`, `buy_<item>`, `adopt_more` (a 2nd–5th cat), `contest_enter`, `contest_vote` (once per voting session), `contest_prize`.
 
-The day-2 and day-7 returns compared with `adopt` show how many players come back.
+The day-2 and day-7 returns compared with `adopt` show how many players come back. For the contest, `contest_enter` and `contest_vote` show how many players take part each week.
