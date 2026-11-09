@@ -350,6 +350,17 @@ function drawSeason(ctx, season, now) {
   }
 }
 
+// Contest trophies sit on a small shelf under the picture frame.
+const TROPHIES = ['trophy_gold', 'trophy_silver', 'trophy_bronze'];
+function drawTrophyShelf(ctx, owned) {
+  const won = TROPHIES.filter((id) => owned.has(id));
+  if (!won.length) return;
+  rect(ctx, 100, 52, 22, 2, WOOD);
+  rect(ctx, 101, 54, 2, 2, WOOD_DARK);
+  rect(ctx, 119, 54, 2, 2, WOOD_DARK);
+  won.forEach((id, i) => drawSprite(ctx, id, 102 + i * 7, 46));
+}
+
 function drawPlant(ctx, now) {
   drawSprite(ctx, 'decor_plant', 34, 73);
   if (Math.floor(now / 800) % 2) rect(ctx, 35, 76, 1, 1, '#4caf50'); // leaf sways
@@ -371,6 +382,7 @@ export function drawRoom(ctx, state, now, clock) {
     rect(ctx, 106, 34, 14, 10, '#bfe6ff');
     drawSprite(ctx, 'fish', 109, 36);
   }
+  drawTrophyShelf(ctx, owned);
   drawSunbeam(ctx, time);
 
   drawCatTree(ctx, now);

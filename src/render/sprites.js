@@ -161,6 +161,9 @@ export const SPRITES = {
     colors: { o: '#8a5a2a', y: '#e8c35a' },
     rows: ['.......o.', '......o..', '.....o...', '....o....', '...o.....', '..yyy....', '.yyyyy...', 'yyyyyy...', 'yyyyy....', 'yyyy.....'],
   },
+  trophy_gold: { colors: { y: '#ffcf3a', l: '#ffffff', o: '#8a5a2a' }, rows: ['yyyyy', 'ylyyy', '.yyy.', '..y..', '.yyy.', 'ooooo'] },
+  trophy_silver: { colors: { y: '#d9dde6', l: '#ffffff', o: '#5a5a6a' }, rows: ['yyyyy', 'ylyyy', '.yyy.', '..y..', '.yyy.', 'ooooo'] },
+  trophy_bronze: { colors: { y: '#d0884a', l: '#ffffff', o: '#6b3e1f' }, rows: ['yyyyy', 'ylyyy', '.yyy.', '..y..', '.yyy.', 'ooooo'] },
   arrow: {
     colors: { y: '#ffd84a', o: '#7a5a00' },
     rows: ['ooooo', 'oyyyo', '.oyo.', '..o..'],

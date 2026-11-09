@@ -123,3 +123,13 @@ export const CLIP_SECONDS = 6;
 export const MAX_CATS = 5;
 export const NEW_CAT_PRICES = [50, 100, 150, 200]; // 2nd, 3rd, 4th, 5th cat
 export const NEW_CAT_NEEDS_STAGE = 'young';
+
+export const FUR_IDS = ['orange', 'grey', 'black', 'white', 'calico'];
+
+// Weekly "Cutest Room" contest.
+export const CONTEST_ENTRY_COINS = 5; // once a week, for joining
+export const CONTEST_PRIZES = [ // by rank
+  { trophy: 'trophy_gold', coins: 50 },
+  { trophy: 'trophy_silver', coins: 30 },
+  { trophy: 'trophy_bronze', coins: 20 },
+];

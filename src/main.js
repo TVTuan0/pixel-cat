@@ -3,8 +3,10 @@ import { createState, loadState, saveState, clearState } from './state.js';
 import {
   applyElapsed, feed, pet, clean, toggleSleep, canPlay, finishFishGame,
   buy, equip, claimDailyGift, stageOf, ageInDays, recordAction, claimTask, checkStickers,
-  selectCat, nextCatOffer, adoptCat,
+  selectCat, nextCatOffer, adoptCat, rewardContestEntry, claimContestPrize,
 } from './rules.js';
+import { buildEntry } from './contestRoom.js';
+import { contestAvailable, getContestStatus, getDuel, sendVote, sendEntry } from './contest.js';
 import { FOODS, STICKERS, CLIP_SECONDS } from './config.js';
 import { drawScene, playEffect, playCatEffect, catAt, stepCats, feedCat, resetCats } from './render/canvas.js';
 import { spriteCanvas } from './render/sprites.js';
@@ -15,7 +17,7 @@ import { startAnalytics, track } from './analytics.js';
 import { startInstallSupport, installState, promptInstall } from './install.js';
 import {
   initUI, renderHud, say, showMood, closeSheet, isSheetOpen, openFeed, openShop,
-  openSettings, openAdopt, openFishGame, showMessage, catPreview, openTasks, openShareChoice,
+  openSettings, openAdopt, openFishGame, showMessage, catPreview, openTasks, openShareChoice, openContest, openDuel,
 } from './ui.js';
 
 const storage = (() => {
@@ -106,7 +108,22 @@ const handlers = {
         awardStickers();
         handlers.tasks();
       },
+      onContest: contestAvailable ? () => handlers.contest() : null,
     });
+  },
+
+  async contest() {
+    try {
+      const status = await getContestStatus();
+      await claimPrize(status);
+      openContest(status, {
+        onEnter: enterContest,
+        onVote: startDuels,
+        onInvite: () => { closeSheet(); invite(); },
+      });
+    } catch (err) {
+      contestProblem(err);
+    }
   },
 
   sleep() {
@@ -250,6 +267,70 @@ async function shareVideo() {
   }
 }
 
+// Contest -------------------------------------------------------------
+
+function contestProblem(err) {
+  say(t(err.code === 'slow_down' ? 'contestSlow' : 'contestOffline'));
+  sfx.no();
+}
+
+async function enterContest() {
+  try {
+    const entered = await sendEntry(buildEntry(state, Date.now()));
+    const reward = rewardContestEntry(state, entered.week);
+    if (reward.coins) {
+      commit(reward.state);
+      sfx.coin();
+    }
+    track('contest_enter');
+    say(t('contestEntered'), 2500);
+    await handlers.contest();
+  } catch (err) {
+    contestProblem(err);
+  }
+}
+
+// Shows duel after duel; each tap is a vote, then the next pair appears.
+function startDuels() {
+  let votes = 0;
+  const next = async () => {
+    try {
+      const duel = await getDuel();
+      openDuel(duel, votes, {
+        onInvite: () => { closeSheet(); invite(); },
+        onPick: async (id) => {
+          try {
+            await sendVote(duel.ticket, id);
+            if (votes === 0) track('contest_vote');
+            votes++;
+            sfx.tap();
+            setTimeout(next, 450);
+          } catch (err) {
+            closeSheet();
+            contestProblem(err);
+          }
+        },
+      });
+    } catch (err) {
+      closeSheet();
+      contestProblem(err);
+    }
+  };
+  next();
+}
+
+// Last week's top 3 get a trophy and coins, once.
+async function claimPrize(status) {
+  const mine = status.lastWeek.mine;
+  if (!state || !mine) return;
+  const r = claimContestPrize(state, status.lastWeek.week, mine.rank);
+  if (!r.prize) return;
+  commit(r.state);
+  track('contest_prize');
+  sfx.fanfare();
+  await showMessage(t('prizeTitle'), t('prizeBody', { rank: mine.rank, n: r.prize.coins }), spriteCanvas(r.prize.trophy, 10));
+}
+
 async function invite() {
   track('invite');
   const outcome = await shareLink(t('inviteText'));
@@ -346,6 +427,12 @@ function boot() {
     startAdopt(guessLanguage());
   }
   setInterval(tick, 1000);
+  // A trophy from last week's contest is handed out shortly after the game opens.
+  if (state && contestAvailable) {
+    setTimeout(() => {
+      if (!isSheetOpen()) getContestStatus().then(claimPrize).catch(() => {});
+    }, 3000);
+  }
   setInterval(() => state && saveState(storage, state), 15000);
   document.addEventListener('visibilitychange', () => {
     if (!state) return;

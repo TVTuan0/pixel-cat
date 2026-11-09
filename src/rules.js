@@ -6,6 +6,7 @@ import {
   CLEAN_COINS, PLAY_MIN_ENERGY, PLAY_ENERGY_COST, GIFT_BASE_COINS,
   GIFT_STREAK_BONUS, GIFT_STREAK_CAP, FOODS, SHOP_ITEMS, WEATHER_CHANCE,
   TASKS, TASKS_PER_DAY, STICKERS, LUNAR_DATES, MAX_CATS, NEW_CAT_PRICES, NEW_CAT_NEEDS_STAGE,
+  CONTEST_ENTRY_COINS, CONTEST_PRIZES,
 } from './config.js';
 
 const clamp = (v) => Math.max(0, Math.min(100, v));
@@ -279,4 +280,22 @@ export function seasonOf(time) {
   if (near('10-31', 11, 0)) return 'halloween';
   if (near('12-25', 24, 1)) return 'christmas';
   return null;
+}
+
+// Weekly contest. state.contest = { entered: week the player last joined, prizes: weeks already paid }.
+export function rewardContestEntry(state, week) {
+  const contest = state.contest ?? {};
+  if (contest.entered === week) return { state, coins: 0 };
+  return { state: { ...state, coins: state.coins + CONTEST_ENTRY_COINS, contest: { ...contest, entered: week } }, coins: CONTEST_ENTRY_COINS };
+}
+
+export function claimContestPrize(state, week, rank) {
+  const contest = state.contest ?? {};
+  const prize = CONTEST_PRIZES[rank - 1] ?? null;
+  if (!prize || (contest.prizes ?? []).includes(week)) return { state, prize: null };
+  const owned = state.owned.includes(prize.trophy) ? state.owned : [...state.owned, prize.trophy];
+  return {
+    state: { ...state, owned, coins: state.coins + prize.coins, contest: { ...contest, prizes: [...(contest.prizes ?? []), week] } },
+    prize,
+  };
 }

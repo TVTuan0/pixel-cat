@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createState } from '../src/state.js';
-import { dailyTasks, recordAction, claimTask, checkStickers, seasonOf } from '../src/rules.js';
-import { DAY, HOUR, TASKS, TASKS_PER_DAY } from '../src/config.js';
+import { dailyTasks, recordAction, claimTask, checkStickers, seasonOf, rewardContestEntry, claimContestPrize } from '../src/rules.js';
+import { DAY, HOUR, TASKS, TASKS_PER_DAY, CONTEST_ENTRY_COINS, CONTEST_PRIZES } from '../src/config.js';
 
 const T0 = new Date(2026, 10, 8, 10).getTime();
 const fresh = () => createState('Mochi', T0, 'en');
@@ -69,5 +69,27 @@ describe('seasonOf', () => {
     expect(seasonOf(day(2026, 12, 24))).toBe('christmas');
     expect(seasonOf(day(2026, 6, 1))).toBe(null);
     expect(seasonOf(day(2026, 11, 8))).toBe(null);
+  });
+});
+
+describe('contest rewards', () => {
+  it('pays for joining once a week', () => {
+    const start = { ...fresh(), coins: 0 };
+    const a = rewardContestEntry(start, '2026-11-09');
+    expect(a.coins).toBe(CONTEST_ENTRY_COINS);
+    expect(rewardContestEntry(a.state, '2026-11-09').coins).toBe(0);
+    expect(rewardContestEntry(a.state, '2026-11-16').coins).toBe(CONTEST_ENTRY_COINS);
+  });
+  it('gives the top 3 a trophy and coins, once per week', () => {
+    const start = { ...fresh(), coins: 0 };
+    const gold = claimContestPrize(start, '2026-11-02', 1);
+    expect(gold.prize).toEqual(CONTEST_PRIZES[0]);
+    expect(gold.state.owned).toContain('trophy_gold');
+    expect(gold.state.coins).toBe(CONTEST_PRIZES[0].coins);
+    expect(claimContestPrize(gold.state, '2026-11-02', 1).prize).toBe(null);
+    const again = claimContestPrize(gold.state, '2026-11-09', 1);
+    expect(again.state.owned.filter((id) => id === 'trophy_gold')).toHaveLength(1);
+    expect(again.state.coins).toBe(CONTEST_PRIZES[0].coins * 2);
+    expect(claimContestPrize(start, '2026-11-02', 4).prize).toBe(null);
   });
 });

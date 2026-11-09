@@ -3,8 +3,9 @@ import { t } from './i18n/index.js';
 import { analyticsEnabled } from './analytics.js';
 import { spriteCanvas, FURS } from './render/sprites.js';
 import { drawScene, ROOM_W, ROOM_H } from './render/canvas.js';
+import { entryToScene } from './contestRoom.js';
 import { runFishGame, drawFishGameIdle } from './minigame/fish.js';
-import { FOODS, SHOP_ITEMS, FISH_GAME_SECONDS, EQUIP_SLOTS, STICKERS } from './config.js';
+import { FOODS, SHOP_ITEMS, FISH_GAME_SECONDS, EQUIP_SLOTS, STICKERS, CONTEST_ENTRY_COINS, DAY } from './config.js';
 import { ageInDays, stageOf, dailyTasks, taskProgress, selectedCat, needsCare, wornItem, nextCatOffer } from './rules.js';
 
 const $ = (id) => document.getElementById(id);
@@ -254,7 +255,7 @@ export function openShareChoice({ canVideo, onPhoto, onVideo }) {
 
 const TASK_ICONS = { feed: 'food_kibble', treat: 'food_cream', pet: 'heart', clean: 'broom', play: 'fish', fish: 'goldfish' };
 
-export function openTasks(state, now, { onClaim }) {
+export function openTasks(state, now, { onClaim, onContest = null }) {
   const keepScroll = sheet.open ? sheet.scrollTop : 0; // stay in place after claiming
   const tasks = dailyTasks(now).map((id) => {
     const { task, done, claimed } = taskProgress(state, id, now);
@@ -277,7 +278,13 @@ export function openTasks(state, now, { onClaim }) {
     const have = state.stickers.includes(s.id);
     return el('div', { class: `sticker ${have ? '' : 'locked'}` }, spriteCanvas(s.icon, 4), t(`sticker_${s.id}`));
   });
+  const contestCard = onContest
+    ? el('button', { class: 'row btn contest-card', type: 'button', onclick: onContest },
+      el('span', { class: 'icon' }, spriteCanvas('trophy_gold', 5)),
+      el('span', { class: 'grow' }, el('div', {}, t('contestCard')), el('div', { class: 'note' }, t('contestVote'))))
+    : null;
   const body = el('div', { class: 'list' },
+    contestCard,
     el('p', { class: 'note' }, t('tasksNote')),
     tasks,
     el('div', { class: 'section-title' }, `${t('stickersTitle')} · ${state.stickers.length}/${STICKERS.length}`),
@@ -407,6 +414,73 @@ export function showMessage(title, text, art, extra = null) {
     );
     openSheet(title, body, { onClose: resolve });
   });
+}
+
+// A still picture of a contest room.
+function roomCanvas(room, className) {
+  const canvas = el('canvas', { class: className, width: ROOM_W, height: ROOM_H });
+  drawScene(canvas.getContext('2d'), entryToScene(room, Date.now()), performance.now(), Date.now());
+  return canvas;
+}
+
+const catNamesOf = (room) => room.cats.map((c) => c.name).join(' & ');
+const TROPHY_SPRITES = ['trophy_gold', 'trophy_silver', 'trophy_bronze'];
+
+export function openContest(status, { onEnter, onVote, onInvite }) {
+  const daysLeft = Math.ceil((status.endsAt - Date.now()) / DAY);
+  const mine = !status.mine ? null
+    : el('p', {}, status.mine.wins > 0 ? t('contestMine', { wins: status.mine.wins, rank: status.mine.rank }) : t('contestMineNew'));
+  const winners = status.lastWeek.top.map((w) =>
+    el('div', { class: 'winner' },
+      el('div', { class: 'winner-head' },
+        spriteCanvas(TROPHY_SPRITES[w.rank - 1], 4),
+        el('span', {}, `#${w.rank} · ${catNamesOf(w.room)}`),
+        el('span', { class: 'note' }, t('contestWins', { n: w.wins }))),
+      roomCanvas(w.room, 'winner-room'),
+    ));
+  const body = el('div', { class: 'list' },
+    el('p', { class: 'note' }, `${daysLeft <= 1 ? t('contestEndsToday') : t('contestEnds', { n: daysLeft })} · ${t('contestCount', { n: status.entries })}`),
+    mine,
+    el('button', { class: 'btn primary', type: 'button', onclick: onVote }, t('contestVote')),
+    el('button', { class: 'btn', type: 'button', onclick: onEnter }, status.mine ? t('contestUpdate') : t('contestEnter', { n: CONTEST_ENTRY_COINS })),
+    el('button', { class: 'btn small', type: 'button', onclick: onInvite }, t('inviteButton')),
+    winners.length ? el('div', { class: 'section-title' }, t('contestWinners')) : null,
+    winners,
+    el('p', { class: 'note' }, t('contestPrivacy')),
+  );
+  openSheet(t('contestTitle'), body);
+}
+
+// "Which is cuter?": two rooms stacked; tapping one votes for it.
+export function openDuel(duel, votes, { onPick, onInvite }) {
+  if (!duel.pair) {
+    const body = el('div', { class: 'list center' },
+      spriteCanvas('trophy_gold', 8),
+      el('p', {}, t('duelNone')),
+      el('button', { class: 'btn primary', type: 'button', onclick: onInvite }, t('inviteButton')),
+    );
+    openSheet(t('duelTitle'), body);
+    return;
+  }
+  let picked = false;
+  const choices = duel.pair.map((entry) => {
+    const button = el('button', { class: 'duel-choice', type: 'button' },
+      roomCanvas(entry.room, 'duel-room'),
+      el('span', { class: 'duel-names' }, catNamesOf(entry.room)));
+    button.addEventListener('click', () => {
+      if (picked) return;
+      picked = true;
+      button.classList.add('chosen');
+      button.append(el('span', { class: 'duel-heart' }, spriteCanvas('heart', 8)));
+      onPick(entry.id);
+    });
+    return button;
+  });
+  const body = el('div', { class: 'list' },
+    el('p', { class: 'note' }, `${t('duelHelp')} · ${t('duelVotes', { n: votes })}`),
+    el('div', { class: 'duel' }, choices[0], el('span', { class: 'duel-vs' }, 'VS'), choices[1]),
+  );
+  openSheet(t('duelTitle'), body);
 }
 
 export function catPreview(state) {

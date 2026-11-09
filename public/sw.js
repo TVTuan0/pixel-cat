@@ -1,7 +1,7 @@
 // Keeps a copy of the game so it opens offline.
 // Pages: try the network first (to get updates), fall back to the copy.
 // Everything else (scripts, styles, images, fonts): use the copy first, fetch and keep it if missing.
-const CACHE = 'pixel-cat-v1';
+const CACHE = 'pixel-cat-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.add('./')));
@@ -31,6 +31,7 @@ self.addEventListener('fetch', (event) => {
   const isOwn = url.origin === self.location.origin;
   const isFont = url.host === 'fonts.googleapis.com' || url.host === 'fonts.gstatic.com';
   if (!isOwn && !isFont) return; // analytics and anything else go straight to the network
+  if (isOwn && url.pathname.startsWith('/api/')) return; // contest data must always be fresh
 
   if (request.mode === 'navigate') {
     event.respondWith(
