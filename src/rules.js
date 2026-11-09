@@ -3,7 +3,7 @@ import {
   HOUR, DAY, DECAY_PER_HOUR, SLEEP_ENERGY_PER_HOUR, LOW_STAT, HAPPY_AVERAGE,
   FULL_HUNGER, STAGES, PET_COOLDOWN_MS, PET_HAPPINESS, CLEAN_COINS_BELOW,
   CLEAN_COINS, PLAY_MIN_ENERGY, PLAY_ENERGY_COST, GIFT_BASE_COINS,
-  GIFT_STREAK_BONUS, GIFT_STREAK_CAP, FOODS, SHOP_ITEMS,
+  GIFT_STREAK_BONUS, GIFT_STREAK_CAP, FOODS, SHOP_ITEMS, EQUIP_SLOTS, WEATHER_CHANCE,
 } from './config.js';
 
 const clamp = (v) => Math.max(0, Math.min(100, v));
@@ -100,12 +100,11 @@ export function buy(state, itemId) {
   if (state.owned.includes(itemId)) return { state, result: 'owned' };
   if (state.coins < item.price) return { state, result: 'poor' };
   const bought = { ...state, coins: state.coins - item.price, owned: [...state.owned, itemId] };
-  const wearable = item.slot === 'hat' || item.slot === 'collar';
-  const equipped = wearable ? { ...state.equipped, [item.slot]: itemId } : state.equipped;
+  const equipped = EQUIP_SLOTS.includes(item.slot) ? { ...state.equipped, [item.slot]: itemId } : state.equipped;
   return { state: { ...bought, equipped }, result: 'ok' };
 }
 
-// Puts on an owned hat or collar, or takes it off if already worn.
+// Uses an owned one-at-a-time item (hat, collar, wallpaper, floor), or stops using it.
 export function equip(state, itemId) {
   const item = SHOP_ITEMS.find((i) => i.id === itemId);
   if (!state.owned.includes(itemId)) return state;
@@ -120,4 +119,14 @@ export function claimDailyGift(state, now) {
   const streak = state.lastGiftDay === yesterday ? state.streak + 1 : 1;
   const coins = GIFT_BASE_COINS + Math.min(streak, GIFT_STREAK_CAP) * GIFT_STREAK_BONUS;
   return { state: { ...state, coins: state.coins + coins, streak, lastGiftDay: today }, coins };
+}
+
+// Weather outside the window. Same for everyone on the same day.
+export function weatherOf(time) {
+  let hash = 0;
+  for (const ch of dayKey(time)) hash = (hash * 31 + ch.charCodeAt(0)) % 1000003;
+  const roll = hash % 100;
+  if (roll < WEATHER_CHANCE.clear) return 'clear';
+  if (roll < WEATHER_CHANCE.clear + WEATHER_CHANCE.rain) return 'rain';
+  return 'snow';
 }

@@ -30,6 +30,15 @@ describe('state', () => {
     store.setItem(SAVE_KEY, '{not json');
     expect(loadState(store, T0)).toBe(null);
   });
+  it('loads saves made before wallpapers and floors existed', () => {
+    const store = memoryStorage();
+    const old = createState('Mochi', T0, 'en');
+    old.equipped = { hat: 'hat_bow', collar: null };
+    old.owned = ['hat_bow'];
+    saveState(store, old);
+    const loaded = loadState(store, T0);
+    expect(loaded.equipped).toEqual({ hat: 'hat_bow', collar: null, wall: null, floor: null });
+  });
   it('new cats start with sound off', () => {
     expect(createState('Mochi', T0, 'en').sound).toBe(false);
   });

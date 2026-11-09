@@ -50,7 +50,12 @@ export const FOODS = [
   { id: 'cream', price: 5, hunger: 10, happiness: 25, coins: 0 },
 ];
 
-// hat and collar show one at a time; toy and decor show whenever owned.
+// Percent of days with each weather (snow gets the rest).
+export const WEATHER_CHANCE = { clear: 60, rain: 25 };
+
+// Items in these slots are used one at a time. Toys and decor show whenever owned.
+export const EQUIP_SLOTS = ['hat', 'collar', 'wall', 'floor'];
+
 export const SHOP_ITEMS = [
   { id: 'collar_red', slot: 'collar', price: 8 },
   { id: 'collar_blue', slot: 'collar', price: 8 },
@@ -63,4 +68,13 @@ export const SHOP_ITEMS = [
   { id: 'decor_plant', slot: 'decor', price: 15 },
   { id: 'decor_rug', slot: 'decor', price: 20 },
   { id: 'decor_frame', slot: 'decor', price: 30 },
+  { id: 'decor_lights', slot: 'decor', price: 25 },
+  { id: 'decor_beanbag', slot: 'decor', price: 30 },
+  { id: 'decor_fishbowl', slot: 'decor', price: 35 },
+  { id: 'wall_stripes', slot: 'wall', price: 20 },
+  { id: 'wall_mint', slot: 'wall', price: 20 },
+  { id: 'wall_stars', slot: 'wall', price: 30 },
+  { id: 'floor_dark', slot: 'floor', price: 20 },
+  { id: 'floor_tiles', slot: 'floor', price: 25 },
+  { id: 'floor_carpet', slot: 'floor', price: 25 },
 ];

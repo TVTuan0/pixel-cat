@@ -3,7 +3,7 @@ import { t } from './i18n/index.js';
 import { spriteCanvas } from './render/sprites.js';
 import { drawScene, ROOM_W, ROOM_H } from './render/canvas.js';
 import { runFishGame, drawFishGameIdle } from './minigame/fish.js';
-import { FOODS, SHOP_ITEMS, FISH_GAME_SECONDS } from './config.js';
+import { FOODS, SHOP_ITEMS, FISH_GAME_SECONDS, EQUIP_SLOTS } from './config.js';
 import { ageInDays, stageOf } from './rules.js';
 
 const $ = (id) => document.getElementById(id);
@@ -152,19 +152,21 @@ export function openFeed(state, onPick) {
 }
 
 export function openShop(state, { onBuy, onEquip }) {
-  const slots = ['hat', 'collar', 'toy', 'decor'];
+  const slots = ['hat', 'collar', 'toy', 'decor', 'wall', 'floor'];
+  const keepScroll = sheet.open ? sheet.scrollTop : 0; // stay in place after buying
   const body = el('div', { class: 'list' });
   for (const slot of slots) {
     body.append(el('div', { class: 'section-title' }, t(`slot_${slot}`)));
     for (const item of SHOP_ITEMS.filter((i) => i.slot === slot)) {
       const owned = state.owned.includes(item.id);
-      const wearable = slot === 'hat' || slot === 'collar';
-      const wearing = state.equipped[slot] === item.id;
+      const inUse = state.equipped[slot] === item.id;
+      const worn = slot === 'hat' || slot === 'collar';
       let action;
       if (!owned) {
         action = el('button', { class: 'btn small', type: 'button', disabled: state.coins < item.price ? '' : false, onclick: () => onBuy(item.id) }, priceTag(item.price));
-      } else if (wearable) {
-        action = el('button', { class: `btn small ${wearing ? 'primary' : ''}`, type: 'button', onclick: () => onEquip(item.id) }, t(wearing ? 'wearing' : 'wear'));
+      } else if (EQUIP_SLOTS.includes(slot)) {
+        const label = worn ? (inUse ? 'wearing' : 'wear') : (inUse ? 'inUse' : 'use');
+        action = el('button', { class: `btn small ${inUse ? 'primary' : ''}`, type: 'button', onclick: () => onEquip(item.id) }, t(label));
       } else {
         action = el('span', { class: 'note' }, t('ownedItem'));
       }
@@ -176,6 +178,7 @@ export function openShop(state, { onBuy, onEquip }) {
     }
   }
   openSheet(t('shopTitle'), body);
+  sheet.scrollTop = keepScroll;
 }
 
 function languageSwitch(current, onLang) {

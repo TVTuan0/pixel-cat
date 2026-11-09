@@ -1,6 +1,8 @@
 import { SAVE_KEY, SAVE_VERSION, START_COINS } from './config.js';
 import { applyElapsed } from './rules.js';
 
+const EMPTY_EQUIPPED = { hat: null, collar: null, wall: null, floor: null };
+
 export function createState(name, now, lang) {
   return {
     version: SAVE_VERSION,
@@ -11,7 +13,7 @@ export function createState(name, now, lang) {
     asleep: false,
     coins: START_COINS,
     owned: [],
-    equipped: { hat: null, collar: null },
+    equipped: { ...EMPTY_EQUIPPED },
     lastGiftDay: null,
     streak: 0,
     lastPetAt: 0,
@@ -28,7 +30,9 @@ export function loadState(storage, now) {
     if (!raw) return null;
     const state = JSON.parse(raw);
     if (state?.version !== SAVE_VERSION) return null;
-    return applyElapsed(state, now);
+    // Saves from before wallpapers and floors existed have no slot for them.
+    const upgraded = { ...state, equipped: { ...EMPTY_EQUIPPED, ...state.equipped } };
+    return applyElapsed(upgraded, now);
   } catch {
     return null;
   }

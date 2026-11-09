@@ -4,7 +4,7 @@ import {
   applyElapsed, feed, pet, clean, toggleSleep, canPlay, finishFishGame,
   buy, equip, claimDailyGift, stageOf, ageInDays,
 } from './rules.js';
-import { drawScene, playEffect, isOnCat, tickIdle } from './render/canvas.js';
+import { drawScene, playEffect, isOnCat, stepCat, feedCat, resetCat } from './render/canvas.js';
 import { spriteCanvas } from './render/sprites.js';
 import { setSoundEnabled, sfx } from './sound.js';
 import { makeCard, shareCard } from './snapshot.js';
@@ -42,7 +42,7 @@ const handlers = {
       closeSheet();
       if (r.result === 'full') return result(t('feedFull'), sfx.no);
       commit(r.state);
-      playEffect('eat', 1500);
+      feedCat();
       result(t('feedOk'), sfx.eat);
     });
   },
@@ -172,11 +172,9 @@ function tick() {
 function frame(now) {
   const shown = state ?? previewState;
   if (shown) {
+    if (state) stepCat(state, now);
     const mood = drawScene(ctx, shown, now, Date.now());
-    if (state) {
-      tickIdle(state, now);
-      showMood(t(`mood_${mood}`));
-    }
+    if (state) showMood(t(`mood_${mood}`));
   }
   requestAnimationFrame(frame);
 }
@@ -191,6 +189,7 @@ function startAdopt(lang) {
     onAdopt: (name) => {
       closeSheet();
       commit(createState(name, Date.now(), lang));
+      resetCat(state);
       say(t('mood_happy'), 2500);
       sfx.meow();
       checkEvents();
@@ -204,6 +203,7 @@ function boot() {
     setLanguage(state.lang);
     setSoundEnabled(state.sound);
     commit(state);
+    resetCat(state);
     checkEvents();
   } else {
     startAdopt(guessLanguage());

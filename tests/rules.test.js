@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createState } from '../src/state.js';
 import {
   applyElapsed, moodOf, stageOf, dayKey, feed, pet, clean, toggleSleep,
-  finishFishGame, buy, equip, claimDailyGift,
+  finishFishGame, buy, equip, claimDailyGift, weatherOf,
 } from '../src/rules.js';
 import { HOUR, DAY, FOODS, START_COINS } from '../src/config.js';
 
@@ -142,6 +142,18 @@ describe('shop', () => {
     expect(buy(a.state, 'hat_bow').result).toBe('owned');
     expect(buy(withStats({}, { coins: 1 }), 'hat_crown').result).toBe('poor');
   });
+  it('buying a wallpaper or floor puts it in use, and it can be switched off', () => {
+    const a = buy(withStats({}, { coins: 50 }), 'wall_mint');
+    expect(a.state.equipped.wall).toBe('wall_mint');
+    const b = buy(a.state, 'floor_tiles');
+    expect(b.state.equipped.floor).toBe('floor_tiles');
+    expect(equip(b.state, 'floor_tiles').equipped.floor).toBe(null);
+  });
+  it('decor is not "worn"', () => {
+    const a = buy(withStats({}, { coins: 50 }), 'decor_fishbowl');
+    expect(a.state.owned).toContain('decor_fishbowl');
+    expect(a.state.equipped).toEqual(fresh().equipped);
+  });
   it('equip toggles an owned hat or collar', () => {
     const owned = { ...fresh(), owned: ['hat_bow'], equipped: { hat: 'hat_bow', collar: null } };
     expect(equip(owned, 'hat_bow').equipped.hat).toBe(null);
@@ -160,6 +172,12 @@ describe('claimDailyGift', () => {
     expect(d2.state.streak).toBe(2);
     expect(d2.coins).toBeGreaterThan(d1.coins);
     expect(claimDailyGift(d2.state, T0 + 4 * DAY).state.streak).toBe(1);
+  });
+  it('weather is the same all day and every kind shows up over a year', () => {
+    expect(weatherOf(T0)).toBe(weatherOf(T0 + 5 * HOUR));
+    const seen = new Set();
+    for (let d = 0; d < 365; d++) seen.add(weatherOf(T0 + d * DAY));
+    expect([...seen].sort()).toEqual(['clear', 'rain', 'snow']);
   });
   it('dayKey uses the local date', () => {
     expect(dayKey(T0)).toBe('2026-11-08');

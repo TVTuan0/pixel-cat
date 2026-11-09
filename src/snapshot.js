@@ -1,7 +1,7 @@
 // Makes a picture card of the cat and shares it (phones) or downloads it.
 import { drawScene, ROOM_W, ROOM_H } from './render/canvas.js';
 
-const SCALE = 6;
+const SCALE = 4;
 const PAD = 24;
 
 export async function makeCard(state, { title, caption }) {

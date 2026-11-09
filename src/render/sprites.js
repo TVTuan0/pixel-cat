@@ -11,11 +11,11 @@ export const CAT_COLORS = {
   blush: '#ffb3c1',
 };
 
-// Body sizes per growth stage, in room pixels.
+// Body sizes per growth stage, in room pixels. `side` is the walking (side view) shape.
 export const CAT_SIZES = {
-  kitten: { hw: 15, hh: 12, bw: 11, bh: 8, ear: 4 },
-  young: { hw: 17, hh: 13, bw: 15, bh: 11, ear: 4 },
-  adult: { hw: 19, hh: 14, bw: 19, bh: 14, ear: 5 },
+  kitten: { hw: 15, hh: 12, bw: 11, bh: 8, ear: 4, side: { L: 14, H: 7, leg: 3, hw: 11, hh: 10 } },
+  young: { hw: 17, hh: 13, bw: 15, bh: 11, ear: 4, side: { L: 19, H: 9, leg: 4, hw: 13, hh: 11 } },
+  adult: { hw: 19, hh: 14, bw: 19, bh: 14, ear: 5, side: { L: 24, H: 11, leg: 4, hw: 15, hh: 12 } },
 };
 
 export const SPRITES = {
@@ -73,6 +73,42 @@ export const SPRITES = {
   decor_frame: {
     colors: { o: '#8a5a2a', s: '#bfe6ff', b: '#6cc3ff', k: '#1a1a2e' },
     rows: ['oooooooo', 'ossssbso', 'osbbkbbo', 'ossssbso', 'oooooooo'],
+  },
+  decor_lights: {
+    colors: { w: '#4a4a5a', r: '#ff5a6e', b: '#5ab0ff', y: '#ffd84a', g: '#5cc96b' },
+    rows: ['w........w', '.ww....ww.', '.r.wwww.b.', '...y..g...'],
+  },
+  decor_beanbag: {
+    colors: { o: '#a0521d', b: '#ff9f43', l: '#ffc785' },
+    rows: ['...oooo...', '..obbbbo..', '.obblbbbo.', 'obblbbbbbo', 'obbbbbbbbo', 'obbbbbbbbo', '.oooooooo.'],
+  },
+  decor_fishbowl: {
+    colors: { o: '#9fd6ff', w: '#6cc3ff', f: '#ff8a3d' },
+    rows: ['...ooooo...', '..o.....o..', '.owwwwwwwo.', 'owwwwffwwwo', 'owwwwwfffwo', 'owwwwffwwwo', '.owwwwwwwo.', '..owwwwwo..', '...ooooo...'],
+  },
+  wall_stripes: {
+    colors: { p: '#ffe3ea', q: '#ffb3c6' },
+    rows: Array(8).fill('ppqqppqq'),
+  },
+  wall_mint: {
+    colors: { m: '#dff5e8', l: '#6cc08b' },
+    rows: ['mmmmmmmm', 'mlmmmmmm', 'mmmmmlmm', 'mmmmmmmm', 'mmlmmmmm', 'mmmmmmml', 'mmmmmmmm', 'mmmmlmmm'],
+  },
+  wall_stars: {
+    colors: { b: '#dfe9ff', w: '#ffffff', y: '#ffd84a' },
+    rows: ['bbbbbbbb', 'bwbbbbbb', 'bbbbbybb', 'bbbbbbbb', 'bbybbbbb', 'bbbbbbwb', 'bbbbbbbb', 'bbbbwbbb'],
+  },
+  floor_dark: {
+    colors: { d: '#6e4a3a', l: '#5a3a2c' },
+    rows: ['dddldddd', 'dddldddd', 'llllllll', 'ddddddld', 'ddddddld', 'llllllll', 'dldddddd', 'dldddddd'],
+  },
+  floor_tiles: {
+    colors: { c: '#f3ead8', t: '#9fd3c7' },
+    rows: ['cccctttt', 'cccctttt', 'cccctttt', 'cccctttt', 'ttttcccc', 'ttttcccc', 'ttttcccc', 'ttttcccc'],
+  },
+  floor_carpet: {
+    colors: { c: '#b49ad6', s: '#9a7fc0' },
+    rows: ['cccccccc', 'cscccccc', 'ccccccsc', 'cccscccc', 'cccccccc', 'csccccsc', 'cccccccc', 'ccccsccc'],
   },
   bowl: {
     colors: { o: '#3a3a5a', b: '#5ab0ff' },
