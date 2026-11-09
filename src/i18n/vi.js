@@ -106,4 +106,17 @@ export default {
 
   shareCard: '{name} · {stage} · Ngày {n}',
   shareText: 'Gặp mèo pixel {name} của mình nè!',
+
+  furLabel: 'Màu lông',
+  fur_orange: 'Mèo vàng',
+  fur_grey: 'Mèo xám',
+  fur_black: 'Mèo đen',
+  fur_white: 'Mèo trắng',
+  fur_calico: 'Mèo tam thể',
+
+  inviteTitle: 'Mời bạn bè',
+  inviteButton: 'Chia sẻ link game',
+  inviteText: 'Nuôi mèo pixel cùng mình nha!',
+  linkCopied: 'Đã sao chép link!',
+  linkFailed: 'Không chia sẻ được link.',
 };

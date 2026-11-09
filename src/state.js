@@ -3,10 +3,11 @@ import { applyElapsed } from './rules.js';
 
 const EMPTY_EQUIPPED = { hat: null, collar: null, wall: null, floor: null };
 
-export function createState(name, now, lang) {
+export function createState(name, now, lang, fur = 'orange') {
   return {
     version: SAVE_VERSION,
     name,
+    fur,
     adoptedAt: now,
     lastSeen: now,
     stats: { hunger: 80, happiness: 80, energy: 80, cleanliness: 100 },
@@ -30,8 +31,8 @@ export function loadState(storage, now) {
     if (!raw) return null;
     const state = JSON.parse(raw);
     if (state?.version !== SAVE_VERSION) return null;
-    // Saves from before wallpapers and floors existed have no slot for them.
-    const upgraded = { ...state, equipped: { ...EMPTY_EQUIPPED, ...state.equipped } };
+    // Older saves miss newer fields: wallpaper/floor slots, and fur (all cats were ginger).
+    const upgraded = { fur: 'orange', ...state, equipped: { ...EMPTY_EQUIPPED, ...state.equipped } };
     return applyElapsed(upgraded, now);
   } catch {
     return null;

@@ -7,7 +7,7 @@ import {
 import { drawScene, playEffect, isOnCat, stepCat, feedCat, resetCat } from './render/canvas.js';
 import { spriteCanvas } from './render/sprites.js';
 import { setSoundEnabled, sfx } from './sound.js';
-import { makeCard, shareCard } from './snapshot.js';
+import { makeCard, shareCard, shareLink } from './snapshot.js';
 import {
   initUI, renderHud, say, showMood, closeSheet, isSheetOpen, openFeed, openShop,
   openSettings, openAdopt, openFishGame, showMessage, catPreview,
@@ -111,6 +111,7 @@ const handlers = {
     openSettings(state, {
       onLang: (lang) => { changeLanguage(lang); handlers.settings(); },
       onSound: (on) => { setSound(on); handlers.settings(); },
+      onInvite: () => { closeSheet(); invite(); },
       onReset: () => {
         const lang = state.lang;
         clearState(storage);
@@ -130,6 +131,12 @@ const handlers = {
     result(t('petOk'), sfx.purr);
   },
 };
+
+async function invite() {
+  const outcome = await shareLink(t('inviteText'));
+  if (outcome === 'copied') say(t('linkCopied'));
+  if (outcome === 'failed') say(t('linkFailed'));
+}
 
 function setSound(on) {
   setSoundEnabled(on);
@@ -157,7 +164,10 @@ async function checkEvents() {
   if (stage !== state.seenStage) {
     commit({ ...state, seenStage: stage });
     sfx.fanfare();
-    await showMessage(t('grewTitle', { name: state.name }), t('grewBody', { stage: t(`stage_${stage}`) }), catPreview(state));
+    await showMessage(t('grewTitle', { name: state.name }), t('grewBody', { stage: t(`stage_${stage}`) }), catPreview(state), {
+      label: t('inviteButton'),
+      onClick: invite,
+    });
   }
   eventsRunning = false;
 }
@@ -179,16 +189,16 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-function startAdopt(lang) {
+function startAdopt(lang, fur = 'orange') {
   setLanguage(lang);
-  previewState = createState('', Date.now(), lang);
+  previewState = createState('', Date.now(), lang, fur);
   renderHud(previewState, Date.now());
   openAdopt(previewState, {
     lang,
-    onLang: (next) => startAdopt(next),
+    onLang: (next) => startAdopt(next, previewState.fur),
     onAdopt: (name) => {
       closeSheet();
-      commit(createState(name, Date.now(), lang));
+      commit(createState(name, Date.now(), lang, previewState.fur));
       resetCat(state);
       say(t('mood_happy'), 2500);
       sfx.meow();

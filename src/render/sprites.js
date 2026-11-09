@@ -1,15 +1,16 @@
 // Small pixel sprites as text grids. One character = one color, '.' = empty.
 
-export const CAT_COLORS = {
-  outline: '#4a2c2a',
-  fur: '#f2a65a',
-  furLight: '#ffe0b8',
-  stripe: '#d9783a',
-  pink: '#ff8fa3',
-  eye: '#2a1d1d',
-  white: '#ffffff',
-  blush: '#ffb3c1',
+const FACE_COLORS = { pink: '#ff8fa3', eye: '#2a1d1d', white: '#ffffff', blush: '#ffb3c1' };
+
+// One palette per fur. `patch` adds the dark spots of a calico.
+export const FURS = {
+  orange: { ...FACE_COLORS, outline: '#4a2c2a', fur: '#f2a65a', furLight: '#ffe0b8', stripe: '#d9783a' },
+  grey: { ...FACE_COLORS, outline: '#2f3340', fur: '#9aa0ad', furLight: '#dfe3ea', stripe: '#6f7583' },
+  black: { ...FACE_COLORS, outline: '#15151d', fur: '#3a3a48', furLight: '#6a6a7a', stripe: '#2a2a36', eye: '#ffd84a' },
+  white: { ...FACE_COLORS, outline: '#6b5d55', fur: '#f7f4ee', furLight: '#ffffff', stripe: '#e3ddd2' },
+  calico: { ...FACE_COLORS, outline: '#4a2c2a', fur: '#f7f4ee', furLight: '#ffffff', stripe: '#f2a65a', patch: '#3a3a48' },
 };
+
 
 // Body sizes per growth stage, in room pixels. `side` is the walking (side view) shape.
 export const CAT_SIZES = {

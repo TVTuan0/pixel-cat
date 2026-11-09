@@ -1,8 +1,10 @@
-// Makes a picture card of the cat and shares it (phones) or downloads it.
+// Makes a picture card of the cat and shares it (phones) or downloads it. Also shares the game link.
 import { drawScene, ROOM_W, ROOM_H } from './render/canvas.js';
+import { SITE_URL } from './config.js';
 
 const SCALE = 4;
 const PAD = 24;
+const SITE_HOST = new URL(SITE_URL).host;
 
 export async function makeCard(state, { title, caption }) {
   const room = document.createElement('canvas');
@@ -12,7 +14,7 @@ export async function makeCard(state, { title, caption }) {
 
   const card = document.createElement('canvas');
   card.width = ROOM_W * SCALE + PAD * 2;
-  card.height = ROOM_H * SCALE + PAD * 2 + 130;
+  card.height = ROOM_H * SCALE + PAD * 2 + 160;
   const ctx = card.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
@@ -32,6 +34,9 @@ export async function makeCard(state, { title, caption }) {
   ctx.fillStyle = '#fff4e0';
   ctx.font = '40px VT323, monospace';
   ctx.fillText(caption, card.width / 2, top + ROOM_H * SCALE + 56);
+  ctx.fillStyle = '#ff8fa3';
+  ctx.font = '32px VT323, monospace';
+  ctx.fillText(SITE_HOST, card.width / 2, top + ROOM_H * SCALE + 100);
   return card;
 }
 
@@ -40,7 +45,7 @@ export async function shareCard(card, { fileName, text }) {
   const file = new File([blob], fileName, { type: 'image/png' });
   if (navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], text });
+      await navigator.share({ files: [file], text: `${text} ${SITE_URL}` });
       return;
     } catch (err) {
       if (err.name === 'AbortError') return;
@@ -52,4 +57,22 @@ export async function shareCard(card, { fileName, text }) {
   link.download = fileName;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Shares the game link. Returns 'shared', 'copied', or 'failed' so the caller can say what happened.
+export async function shareLink(text) {
+  if (navigator.share) {
+    try {
+      await navigator.share({ text, url: SITE_URL });
+      return 'shared';
+    } catch (err) {
+      if (err.name === 'AbortError') return 'shared';
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(`${text} ${SITE_URL}`);
+    return 'copied';
+  } catch {
+    return 'failed';
+  }
 }

@@ -1,6 +1,6 @@
 // DOM: top bar, stat bars, buttons, speech bubble and bottom sheets.
 import { t } from './i18n/index.js';
-import { spriteCanvas } from './render/sprites.js';
+import { spriteCanvas, FURS } from './render/sprites.js';
 import { drawScene, ROOM_W, ROOM_H } from './render/canvas.js';
 import { runFishGame, drawFishGameIdle } from './minigame/fish.js';
 import { FOODS, SHOP_ITEMS, FISH_GAME_SECONDS, EQUIP_SLOTS } from './config.js';
@@ -189,8 +189,10 @@ function languageSwitch(current, onLang) {
   );
 }
 
-export function openSettings(state, { onLang, onSound, onReset }) {
+export function openSettings(state, { onLang, onSound, onReset, onInvite }) {
   const body = el('div', { class: 'list' },
+    el('div', { class: 'section-title' }, t('inviteTitle')),
+    el('button', { class: 'btn small primary', type: 'button', onclick: onInvite }, t('inviteButton')),
     el('div', { class: 'section-title' }, t('language')),
     languageSwitch(state.lang, onLang),
     el('div', { class: 'section-title' }, t('sound')),
@@ -203,6 +205,24 @@ export function openSettings(state, { onLang, onSound, onReset }) {
     el('button', { class: 'btn small', type: 'button', onclick: () => { if (confirm(t('resetConfirm', { name: state.name }))) onReset(); } }, t('resetButton')),
   );
   openSheet(t('settings'), body);
+}
+
+function furPicker(previewState) {
+  const buttons = Object.keys(FURS).map((fur) => {
+    const colors = FURS[fur];
+    const swatch = el('span', { class: 'swatch' });
+    swatch.style.background = colors.patch
+      ? `linear-gradient(135deg, ${colors.fur} 55%, ${colors.stripe} 55% 75%, ${colors.patch} 75%)`
+      : colors.fur;
+    swatch.style.borderColor = colors.outline;
+    const button = el('button', { class: `btn small fur ${fur === previewState.fur ? 'active' : ''}`, type: 'button', 'aria-label': t(`fur_${fur}`), title: t(`fur_${fur}`) }, swatch);
+    button.addEventListener('click', () => {
+      previewState.fur = fur;
+      for (const b of buttons) b.classList.toggle('active', b === button);
+    });
+    return button;
+  });
+  return el('div', { class: 'seg furs' }, buttons);
 }
 
 export function openAdopt(previewState, { lang, onLang, onAdopt }) {
@@ -220,6 +240,8 @@ export function openAdopt(previewState, { lang, onLang, onAdopt }) {
 
   const body = el('div', { class: 'list' },
     preview,
+    el('div', { class: 'section-title' }, t('furLabel')),
+    furPicker(previewState),
     el('p', {}, t('adoptPrompt')),
     input,
     el('button', { class: 'btn primary', type: 'button', onclick: submit }, t('adoptButton')),
@@ -268,12 +290,13 @@ export function openFishGame(onFinish) {
   openSheet(t('gameTitle'), body, { onClose: () => { if (!finished) stop?.(); } });
 }
 
-// A simple message sheet. Resolves when it closes.
-export function showMessage(title, text, art) {
+// A simple message sheet. `extra` adds a second button, e.g. { label, onClick }. Resolves when it closes.
+export function showMessage(title, text, art, extra = null) {
   return new Promise((resolve) => {
     const body = el('div', { class: 'list center' },
       art ?? null,
       el('p', {}, text),
+      extra ? el('button', { class: 'btn', type: 'button', onclick: extra.onClick }, extra.label) : null,
       el('button', { class: 'btn primary', type: 'button', onclick: closeSheet }, t('ok')),
     );
     openSheet(title, body, { onClose: resolve });

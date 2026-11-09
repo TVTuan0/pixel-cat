@@ -1,6 +1,14 @@
 // Draws the cat: front view when sitting or sleeping, side view when walking or jumping.
-import { CAT_COLORS as C, drawSprite } from './sprites.js';
+import { FURS, drawSprite } from './sprites.js';
 import { rect, blob } from './draw.js';
+
+// Colors of the cat being drawn right now; set at the start of each draw call.
+let C = FURS.orange;
+
+// Dark spots for a calico; other furs have none.
+function patch(ctx, x, y, w, h) {
+  if (C.patch) rect(ctx, x, y, w, h, C.patch);
+}
 
 export const FACES = {
   happy: { eyes: 'happy', mouth: 'w', blush: true },
@@ -74,7 +82,8 @@ function drawHat(ctx, hat, headX, headY, hw) {
 }
 
 // Front view. `lying` draws the curled-up sleeping shape. Returns the head box for hearts/Zzz.
-export function drawFrontCat(ctx, { size, cx, ground, face, lying, look, bob, now, equipped }) {
+export function drawFrontCat(ctx, { size, cx, ground, face, lying, look, bob, now, equipped, palette }) {
+  C = palette;
   const { hw, hh, ear } = size;
   const bw = lying ? size.bw + 6 : size.bw;
   const bh = lying ? size.bh - 3 : size.bh;
@@ -92,6 +101,7 @@ export function drawFrontCat(ctx, { size, cx, ground, face, lying, look, bob, no
   blob(ctx, bodyX, bodyY, bw, bh, C.fur, C.outline);
   const belly = Math.floor(bw / 4);
   rect(ctx, cx - belly, bodyY + 2, belly * 2 + 1, Math.max(1, bh - 4), C.furLight);
+  patch(ctx, bodyX + 1, bodyY + 2, 2, 3);
   if (!lying) {
     rect(ctx, cx - 4, ground - 3, 3, 2, C.furLight);
     rect(ctx, cx + 2, ground - 3, 3, 2, C.furLight);
@@ -100,6 +110,7 @@ export function drawFrontCat(ctx, { size, cx, ground, face, lying, look, bob, no
   }
 
   blob(ctx, headX, headY, hw, hh, C.fur, C.outline);
+  patch(ctx, headX + hw - 5, headY + 1, 3, 3);
   drawEars(ctx, headX, headY, hw, ear);
   rect(ctx, cx - 2, headY + 1, 1, 2, C.stripe);
   rect(ctx, cx, headY + 1, 1, 3, C.stripe);
@@ -138,7 +149,8 @@ export function drawFrontCat(ctx, { size, cx, ground, face, lying, look, bob, no
 }
 
 // Side view facing right; `facing` -1 mirrors it. `frame` 0-3 moves the legs; `jumping` stretches them.
-export function drawSideCat(ctx, { size, x, ground, facing, frame, jumping, face, equipped, now }) {
+export function drawSideCat(ctx, { size, x, ground, facing, frame, jumping, face, equipped, now, palette }) {
+  C = palette;
   const { L, H, leg, hw, hh } = size.side;
   const ear = size.ear;
   const bob = !jumping && frame % 2 === 1 ? 1 : 0;
@@ -171,6 +183,7 @@ export function drawSideCat(ctx, { size, x, ground, facing, frame, jumping, face
   blob(ctx, bx, bodyTop, L, H, C.fur, C.outline);
   rect(ctx, bx + 3, bodyTop + H - 3, L - 6, 2, C.furLight);
   for (let i = 0; i < 3; i++) rect(ctx, bx + 3 + i * 3, bodyTop + 1, 1, 2, C.stripe);
+  patch(ctx, bx + L - 9, bodyTop + 2, 3, 2);
 
   const hx = bx + L - Math.floor(hw / 2) - 1;
   const hy = bodyTop - hh + 5;

@@ -78,3 +78,6 @@ export const SHOP_ITEMS = [
   { id: 'floor_tiles', slot: 'floor', price: 25 },
   { id: 'floor_carpet', slot: 'floor', price: 25 },
 ];
+
+// The public link shown on cards and in invites (the game may also run on other sites, like itch.io).
+export const SITE_URL = 'https://pixel-cat-green.vercel.app';

@@ -106,4 +106,17 @@ export default {
 
   shareCard: '{name} · {stage} · Day {n}',
   shareText: 'Meet my pixel cat {name}!',
+
+  furLabel: 'Fur',
+  fur_orange: 'Ginger',
+  fur_grey: 'Grey',
+  fur_black: 'Black',
+  fur_white: 'White',
+  fur_calico: 'Calico',
+
+  inviteTitle: 'Invite friends',
+  inviteButton: 'Share the game link',
+  inviteText: 'Come raise a pixel cat with me!',
+  linkCopied: 'Link copied!',
+  linkFailed: 'Could not share the link.',
 };

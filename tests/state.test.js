@@ -39,6 +39,15 @@ describe('state', () => {
     const loaded = loadState(store, T0);
     expect(loaded.equipped).toEqual({ hat: 'hat_bow', collar: null, wall: null, floor: null });
   });
+  it('keeps the chosen fur, and old saves become ginger', () => {
+    const store = memoryStorage();
+    saveState(store, createState('Mochi', T0, 'en', 'calico'));
+    expect(loadState(store, T0).fur).toBe('calico');
+    const old = createState('Mochi', T0, 'en');
+    delete old.fur;
+    saveState(store, old);
+    expect(loadState(store, T0).fur).toBe('orange');
+  });
   it('new cats start with sound off', () => {
     expect(createState('Mochi', T0, 'en').sound).toBe(false);
   });

@@ -1,5 +1,5 @@
 // Draws the whole scene and drives what the cat is doing on screen.
-import { CAT_SIZES, drawSprite } from './sprites.js';
+import { CAT_SIZES, FURS, drawSprite } from './sprites.js';
 import { drawRoom, drawDarkness } from './room.js';
 import { drawFrontCat, drawSideCat, FACES } from './cat.js';
 import { catPose, updateCat, maybeWander, goTo, placeCat, targetSpot, restFor } from './walker.js';
@@ -72,7 +72,7 @@ function drawCat(ctx, state, now, clock) {
   if (pose.mode !== 'sit') {
     return drawSideCat(ctx, {
       size, x: pose.x, ground: pose.g, facing: pose.facing, frame: pose.walkFrame,
-      jumping: pose.mode === 'jump', face, equipped: state.equipped, now,
+      jumping: pose.mode === 'jump', face, equipped: state.equipped, now, palette: FURS[state.fur],
     });
   }
 
@@ -84,7 +84,7 @@ function drawCat(ctx, state, now, clock) {
     size, cx: pose.x, ground: pose.g - lift, face, lying,
     look: active('look', now) ? (Math.floor(now / 800) % 2 ? 1 : -1) : 0,
     bob: lying ? Math.floor(now / 1200) % 2 : Math.floor(now / 700) % 2,
-    now, equipped: state.equipped,
+    now, equipped: state.equipped, palette: FURS[state.fur],
   });
 }
 
