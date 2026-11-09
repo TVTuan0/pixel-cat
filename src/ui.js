@@ -190,10 +190,20 @@ function languageSwitch(current, onLang) {
   );
 }
 
-export function openSettings(state, { onLang, onSound, onReset, onInvite }) {
+// Install section: a button when the browser can install, steps on iPhone, nothing otherwise.
+function installSection(install, onInstall) {
+  if (install === 'prompt') {
+    return [el('div', { class: 'section-title' }, t('installTitle')), el('button', { class: 'btn small', type: 'button', onclick: onInstall }, t('installButton'))];
+  }
+  if (install === 'ios') return [el('div', { class: 'section-title' }, t('installTitle')), el('p', { class: 'note' }, t('installIos'))];
+  return [];
+}
+
+export function openSettings(state, { onLang, onSound, onReset, onInvite, install, onInstall }) {
   const body = el('div', { class: 'list' },
     el('div', { class: 'section-title' }, t('inviteTitle')),
     el('button', { class: 'btn small primary', type: 'button', onclick: onInvite }, t('inviteButton')),
+    installSection(install, onInstall),
     el('div', { class: 'section-title' }, t('language')),
     languageSwitch(state.lang, onLang),
     el('div', { class: 'section-title' }, t('sound')),

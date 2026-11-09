@@ -9,6 +9,7 @@ import { spriteCanvas } from './render/sprites.js';
 import { setSoundEnabled, sfx } from './sound.js';
 import { makeCard, shareCard, shareLink } from './snapshot.js';
 import { startAnalytics, track } from './analytics.js';
+import { startInstallSupport, installState, promptInstall } from './install.js';
 import {
   initUI, renderHud, say, showMood, closeSheet, isSheetOpen, openFeed, openShop,
   openSettings, openAdopt, openFishGame, showMessage, catPreview,
@@ -116,6 +117,8 @@ const handlers = {
       onLang: (lang) => { changeLanguage(lang); handlers.settings(); },
       onSound: (on) => { setSound(on); handlers.settings(); },
       onInvite: () => { closeSheet(); invite(); },
+      install: installState(),
+      onInstall: () => { closeSheet(); promptInstall(); },
       onReset: () => {
         const lang = state.lang;
         clearState(storage);
@@ -218,6 +221,7 @@ function startAdopt(lang, fur = 'orange') {
 
 function boot() {
   startAnalytics();
+  startInstallSupport();
   initUI(handlers);
   if (state) {
     setLanguage(state.lang);

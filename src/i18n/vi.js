@@ -120,4 +120,8 @@ export default {
   linkCopied: 'Đã sao chép link!',
   linkFailed: 'Không chia sẻ được link.',
   privacyNote: 'Chúng mình chỉ đếm lượt chơi ẩn danh: không cookie, không dữ liệu cá nhân.',
+
+  installTitle: 'Chơi như ứng dụng',
+  installButton: 'Thêm Pixel Cat ra màn hình chính',
+  installIos: 'Trên iPhone: bấm Chia sẻ, rồi chọn "Thêm vào MH chính".',
 };

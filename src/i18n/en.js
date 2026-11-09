@@ -120,4 +120,8 @@ export default {
   linkCopied: 'Link copied!',
   linkFailed: 'Could not share the link.',
   privacyNote: 'We count visits anonymously: no cookies, no personal data.',
+
+  installTitle: 'Play like an app',
+  installButton: 'Add Pixel Cat to home screen',
+  installIos: 'On iPhone: tap Share, then "Add to Home Screen".',
 };
