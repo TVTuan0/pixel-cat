@@ -2,8 +2,9 @@ import { t, setLanguage, guessLanguage } from './i18n/index.js';
 import { createState, loadState, saveState, clearState } from './state.js';
 import {
   applyElapsed, feed, pet, clean, toggleSleep, canPlay, finishFishGame,
-  buy, equip, claimDailyGift, stageOf, ageInDays,
+  buy, equip, claimDailyGift, stageOf, ageInDays, recordAction, claimTask, checkStickers,
 } from './rules.js';
+import { FOODS, STICKERS } from './config.js';
 import { drawScene, playEffect, isOnCat, stepCat, feedCat, resetCat } from './render/canvas.js';
 import { spriteCanvas } from './render/sprites.js';
 import { setSoundEnabled, sfx } from './sound.js';
@@ -12,7 +13,7 @@ import { startAnalytics, track } from './analytics.js';
 import { startInstallSupport, installState, promptInstall } from './install.js';
 import {
   initUI, renderHud, say, showMood, closeSheet, isSheetOpen, openFeed, openShop,
-  openSettings, openAdopt, openFishGame, showMessage, catPreview,
+  openSettings, openAdopt, openFishGame, showMessage, catPreview, openTasks,
 } from './ui.js';
 
 const storage = (() => {
@@ -28,6 +29,23 @@ function commit(next) {
   state = next;
   saveState(storage, state);
   renderHud(state, Date.now());
+}
+
+// Counts actions for today's tasks and the sticker book, e.g. record(['feed', 1], ['treat', 1]).
+function record(...actions) {
+  const now = Date.now();
+  commit(actions.reduce((s, [action, amount]) => recordAction(s, action, amount, now), state));
+  awardStickers();
+}
+
+function awardStickers() {
+  const r = checkStickers(state, Date.now());
+  if (!r.earned.length) return;
+  commit(r.state);
+  r.earned.forEach(() => track('sticker'));
+  const coins = r.earned.reduce((sum, id) => sum + STICKERS.find((x) => x.id === id).coins, 0);
+  say(t('newSticker', { names: r.earned.map((id) => t(`sticker_${id}`)).join(', '), n: coins }), 3500);
+  sfx.fanfare();
 }
 
 function result(text, sound) {
@@ -46,6 +64,8 @@ const handlers = {
       commit(r.state);
       feedCat();
       result(t('feedOk'), sfx.eat);
+      const isTreat = FOODS.find((f) => f.id === foodId).price > 0;
+      record(['feed', 1], ...(isTreat ? [['treat', 1]] : []));
     });
   },
 
@@ -56,6 +76,7 @@ const handlers = {
       onCatch: sfx.catch,
       onEnd: (caught) => {
         commit(finishFishGame(state, caught).state);
+        record(['play', 1], ['fish', caught]);
         track('fish_game');
         sfx.coin();
         playEffect('hop', 500);
@@ -69,6 +90,21 @@ const handlers = {
     commit(r.state);
     playEffect('sparkle', 1200);
     result(r.coins ? t('cleanCoins', { n: r.coins }) : t('cleanOk'), sfx.clean);
+    record(['clean', 1]);
+  },
+
+  tasks() {
+    openTasks(state, Date.now(), {
+      onClaim: (id) => {
+        const r = claimTask(state, id, Date.now());
+        if (r.result !== 'ok') return;
+        commit(r.state);
+        track('task_done');
+        sfx.coin();
+        awardStickers();
+        handlers.tasks();
+      },
+    });
   },
 
   sleep() {
@@ -133,7 +169,10 @@ const handlers = {
     if (!state || !isOnCat(x, y)) return;
     const r = pet(state, Date.now());
     if (r.result === 'asleep') return say(t('asleep'));
-    if (r.result === 'ok') commit(r.state);
+    if (r.result === 'ok') {
+      commit(r.state);
+      record(['pet', 1]);
+    }
     playEffect('purr', 1500);
     result(t('petOk'), sfx.purr);
   },
@@ -187,6 +226,7 @@ function tick() {
   if (!state) return;
   state = applyElapsed(state, Date.now());
   renderHud(state, Date.now());
+  awardStickers();
   checkEvents();
 }
 

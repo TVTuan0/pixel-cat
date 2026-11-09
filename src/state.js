@@ -2,6 +2,8 @@ import { SAVE_KEY, SAVE_VERSION, START_COINS } from './config.js';
 import { applyElapsed } from './rules.js';
 
 const EMPTY_EQUIPPED = { hat: null, collar: null, wall: null, floor: null };
+// counters: lifetime action counts; daily: today's task progress; stickers: sticker ids earned.
+const EMPTY_PROGRESS = { counters: {}, daily: null, stickers: [] };
 
 export function createState(name, now, lang, fur = 'orange') {
   return {
@@ -19,6 +21,7 @@ export function createState(name, now, lang, fur = 'orange') {
     streak: 0,
     lastPetAt: 0,
     seenStage: 'kitten',
+    ...EMPTY_PROGRESS,
     lang,
     sound: false,
   };
@@ -31,8 +34,8 @@ export function loadState(storage, now) {
     if (!raw) return null;
     const state = JSON.parse(raw);
     if (state?.version !== SAVE_VERSION) return null;
-    // Older saves miss newer fields: wallpaper/floor slots, and fur (all cats were ginger).
-    const upgraded = { fur: 'orange', ...state, equipped: { ...EMPTY_EQUIPPED, ...state.equipped } };
+    // Older saves miss newer fields: fur (all cats were ginger), progress, and wallpaper/floor slots.
+    const upgraded = { fur: 'orange', ...EMPTY_PROGRESS, ...state, equipped: { ...EMPTY_EQUIPPED, ...state.equipped } };
     return applyElapsed(upgraded, now);
   } catch {
     return null;

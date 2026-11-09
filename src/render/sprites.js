@@ -161,6 +161,10 @@ export const SPRITES = {
     colors: { o: '#8a5a2a', y: '#e8c35a' },
     rows: ['.......o.', '......o..', '.....o...', '....o....', '...o.....', '..yyy....', '.yyyyy...', 'yyyyyy...', 'yyyyy....', 'yyyy.....'],
   },
+  star: {
+    colors: { y: '#ffd84a', o: '#b8860b' },
+    rows: ['...o...', '..oyo..', 'oooyooo', 'oyyyyyo', '.oyyyo.', 'oyo.oyo', 'oo...oo'],
+  },
   sound_on: {
     colors: { o: '#ffd84a' },
     rows: ['...o......', '..oo...o..', 'oooo.o..o.', 'oooo..o.o.', 'oooo..o.o.', 'oooo.o..o.', '..oo...o..', '...o......'],

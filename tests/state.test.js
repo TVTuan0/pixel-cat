@@ -48,6 +48,18 @@ describe('state', () => {
     saveState(store, old);
     expect(loadState(store, T0).fur).toBe('orange');
   });
+  it('gives old saves an empty sticker book and counters', () => {
+    const store = memoryStorage();
+    const old = createState('Mochi', T0, 'en');
+    delete old.stickers;
+    delete old.counters;
+    delete old.daily;
+    saveState(store, old);
+    const loaded = loadState(store, T0);
+    expect(loaded.stickers).toEqual([]);
+    expect(loaded.counters).toEqual({});
+    expect(loaded.daily).toBe(null);
+  });
   it('new cats start with sound off', () => {
     expect(createState('Mochi', T0, 'en').sound).toBe(false);
   });

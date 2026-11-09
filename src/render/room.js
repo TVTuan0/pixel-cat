@@ -3,7 +3,7 @@ import { drawSprite } from './sprites.js';
 import { rect, blob, line, disc } from './draw.js';
 import { active } from './effects.js';
 import { ROOM_W, ROOM_H, FLOOR_Y } from './layout.js';
-import { weatherOf } from '../rules.js';
+import { weatherOf, seasonOf } from '../rules.js';
 
 const WALLS = {
   default: { base: '#f6e7d0', accent: '#e8d2b0', pattern: 'dots' },
@@ -282,6 +282,74 @@ function drawLitter(ctx, cleanliness, now) {
   }
 }
 
+// Seasonal decorations: one thing on the wall at the top left, one on top of the bookshelf.
+function drawLantern(ctx, x, y, now) {
+  const swing = Math.round(Math.sin(now / 700 + x));
+  line(ctx, x + 3, 0, x + 3 + swing, y, '#6b4420');
+  const lx = x + swing;
+  rect(ctx, lx + 1, y, 5, 1, '#ffd84a');
+  rect(ctx, lx, y + 1, 7, 6, '#e8384f');
+  rect(ctx, lx + 1, y + 7, 5, 1, '#ffd84a');
+  rect(ctx, lx + 3, y + 1, 1, 6, '#ff7a5a');
+  rect(ctx, lx + 3, y + 8, 1, 3, '#ffd84a');
+}
+
+function drawSeason(ctx, season, now) {
+  if (season === 'tet') {
+    drawLantern(ctx, 24, 10, now);
+    drawLantern(ctx, 38, 14, now);
+    // Yellow apricot blossom (hoa mai) in a vase on the bookshelf.
+    rect(ctx, 133, 24, 6, 6, '#3a7bff');
+    rect(ctx, 134, 25, 4, 1, '#ffffff');
+    line(ctx, 136, 24, 130, 12, '#6b4420');
+    line(ctx, 136, 24, 142, 10, '#6b4420');
+    line(ctx, 136, 22, 136, 8, '#6b4420');
+    for (const [x, y] of [[130, 12], [132, 15], [142, 10], [140, 14], [136, 8], [135, 12], [138, 17], [129, 10], [144, 12]]) {
+      rect(ctx, x - 1, y, 3, 1, '#ffd84a');
+      rect(ctx, x, y - 1, 1, 3, '#ffd84a');
+      rect(ctx, x, y, 1, 1, '#ff8a3d');
+    }
+  } else if (season === 'midautumn') {
+    // Star lantern (đèn ông sao) and mooncakes.
+    const swing = Math.round(Math.sin(now / 700));
+    line(ctx, 30, 0, 30 + swing, 10, '#6b4420');
+    const cx = 30 + swing, cy = 17;
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+      line(ctx, cx, cy, cx + Math.round(Math.cos(a) * 7), cy + Math.round(Math.sin(a) * 7), '#e8384f');
+    }
+    disc(ctx, cx, cy, 3, '#ffd84a', '#e8384f');
+    rect(ctx, 129, 28, 16, 2, '#ffffff');
+    for (const x of [131, 138]) {
+      rect(ctx, x, 23, 6, 5, '#c98b4a');
+      rect(ctx, x + 1, 24, 4, 3, '#e0aa6a');
+    }
+  } else if (season === 'halloween') {
+    // Pumpkin on the bookshelf and a flapping bat.
+    rect(ctx, 136, 19, 2, 3, '#4caf50');
+    blob(ctx, 130, 21, 14, 9, '#ff8a3d', '#a0521d');
+    rect(ctx, 133, 24, 2, 2, '#ffd84a');
+    rect(ctx, 139, 24, 2, 2, '#ffd84a');
+    rect(ctx, 134, 27, 6, 1, '#ffd84a');
+    const flap = Math.floor(now / 200) % 2;
+    rect(ctx, 28, 16, 4, 3, '#2a1d3a');
+    rect(ctx, 23, 15 + flap, 5, 2, '#2a1d3a');
+    rect(ctx, 32, 15 + flap, 5, 2, '#2a1d3a');
+    rect(ctx, 29, 16, 1, 1, '#ff5a6e');
+    rect(ctx, 31, 16, 1, 1, '#ff5a6e');
+  } else if (season === 'christmas') {
+    // Small tree on the bookshelf and a wreath on the wall.
+    for (let i = 0; i < 12; i++) rect(ctx, 137 - Math.floor(i / 2), 14 + i, 1 + Math.floor(i / 2) * 2, 1, '#2e7d32');
+    rect(ctx, 136, 26, 2, 4, '#6b4420');
+    drawSprite(ctx, 'sparkle', 136, 11);
+    const twinkle = Math.floor(now / 500) % 2;
+    for (const [x, y, c] of [[135, 18, '#e8384f'], [139, 21, '#ffd84a'], [133, 23, '#5ab0ff'], [140, 24, '#e8384f']]) rect(ctx, x, y, 1, 1, twinkle ? c : '#ffffff');
+    disc(ctx, 30, 18, 6, '#2e7d32', '#1b5e20');
+    disc(ctx, 30, 18, 2, '#f6e7d0', '#2e7d32');
+    rect(ctx, 28, 23, 5, 2, '#e8384f');
+  }
+}
+
 function drawPlant(ctx, now) {
   drawSprite(ctx, 'decor_plant', 34, 73);
   if (Math.floor(now / 800) % 2) rect(ctx, 35, 76, 1, 1, '#4caf50'); // leaf sways
@@ -308,6 +376,7 @@ export function drawRoom(ctx, state, now, clock) {
   drawCatTree(ctx, now);
   drawSofa(ctx);
   drawBookshelf(ctx);
+  drawSeason(ctx, seasonOf(clock), now);
   drawLamp(ctx, state.asleep || isNight(time.getHours()));
   if (owned.has('decor_plant')) drawPlant(ctx, now);
   if (owned.has('decor_fishbowl')) drawFishbowlTable(ctx, now);
@@ -333,4 +402,5 @@ export function drawDarkness(ctx, state, now, clock) {
   drawLamp(ctx, true);
   drawLampGlow(ctx);
   if (state.owned.includes('decor_lights')) drawFairyLights(ctx, now, true);
+  drawSeason(ctx, seasonOf(clock), now);
 }

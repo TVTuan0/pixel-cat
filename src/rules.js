@@ -4,6 +4,7 @@ import {
   FULL_HUNGER, STAGES, PET_COOLDOWN_MS, PET_HAPPINESS, CLEAN_COINS_BELOW,
   CLEAN_COINS, PLAY_MIN_ENERGY, PLAY_ENERGY_COST, GIFT_BASE_COINS,
   GIFT_STREAK_BONUS, GIFT_STREAK_CAP, FOODS, SHOP_ITEMS, EQUIP_SLOTS, WEATHER_CHANCE,
+  TASKS, TASKS_PER_DAY, STICKERS, LUNAR_DATES,
 } from './config.js';
 
 const clamp = (v) => Math.max(0, Math.min(100, v));
@@ -121,12 +122,94 @@ export function claimDailyGift(state, now) {
   return { state: { ...state, coins: state.coins + coins, streak, lastGiftDay: today }, coins };
 }
 
+// A number from the date, so everyone gets the same pick on the same day. `salt` gives different picks.
+function dayHash(time, salt = '') {
+  let hash = 0;
+  for (const ch of dayKey(time) + salt) hash = (hash * 31 + ch.charCodeAt(0)) % 1000003;
+  return hash;
+}
+
 // Weather outside the window. Same for everyone on the same day.
 export function weatherOf(time) {
-  let hash = 0;
-  for (const ch of dayKey(time)) hash = (hash * 31 + ch.charCodeAt(0)) % 1000003;
-  const roll = hash % 100;
+  const roll = dayHash(time) % 100;
   if (roll < WEATHER_CHANCE.clear) return 'clear';
   if (roll < WEATHER_CHANCE.clear + WEATHER_CHANCE.rain) return 'rain';
   return 'snow';
+}
+
+// Today's task ids. Same for everyone on the same day.
+export function dailyTasks(time) {
+  const pool = [...TASKS];
+  const picks = [];
+  for (let i = 0; i < TASKS_PER_DAY; i++) picks.push(pool.splice(dayHash(time, `task${i}`) % pool.length, 1)[0].id);
+  return picks;
+}
+
+// Today's progress, starting fresh on a new day.
+function todayOf(state, time) {
+  const day = dayKey(time);
+  return state.daily?.day === day ? state.daily : { day, progress: {}, claimed: [] };
+}
+
+// Counts an action (feed, treat, pet, clean, play, fish, tasks) for today's tasks and for stickers.
+export function recordAction(state, action, amount, time) {
+  const today = todayOf(state, time);
+  const counters = state.counters ?? {};
+  return {
+    ...state,
+    daily: { ...today, progress: { ...today.progress, [action]: (today.progress[action] ?? 0) + amount } },
+    counters: { ...counters, [action]: (counters[action] ?? 0) + amount },
+  };
+}
+
+export function taskProgress(state, taskId, time) {
+  const task = TASKS.find((x) => x.id === taskId);
+  const today = todayOf(state, time);
+  return { task, done: Math.min(task.goal, today.progress[task.counter] ?? 0), claimed: today.claimed.includes(taskId) };
+}
+
+export function claimTask(state, taskId, time) {
+  if (!dailyTasks(time).includes(taskId)) return { state, result: 'notToday' };
+  const { task, done, claimed } = taskProgress(state, taskId, time);
+  if (claimed) return { state, result: 'claimed' };
+  if (done < task.goal) return { state, result: 'notDone' };
+  const today = todayOf(state, time);
+  const paid = { ...state, coins: state.coins + task.coins, daily: { ...today, claimed: [...today.claimed, taskId] } };
+  return { state: recordAction(paid, 'tasks', 1, time), result: 'ok' };
+}
+
+function stickerEarned(sticker, state, time) {
+  switch (sticker.kind) {
+    case 'counter': return (state.counters?.[sticker.counter] ?? 0) >= sticker.goal;
+    case 'streak': return state.streak >= sticker.goal;
+    case 'stage': return STAGES.findIndex((s) => s.id === stageOf(state, time)) >= STAGES.findIndex((s) => s.id === sticker.stage);
+    case 'owned': return state.owned.length >= sticker.goal;
+    case 'ownsAll': return SHOP_ITEMS.filter((i) => i.slot === sticker.slot).every((i) => state.owned.includes(i.id));
+    default: return false;
+  }
+}
+
+// Gives any stickers newly earned, with their coins.
+export function checkStickers(state, time) {
+  const have = state.stickers ?? [];
+  const earned = STICKERS.filter((s) => !have.includes(s.id) && stickerEarned(s, state, time));
+  if (!earned.length) return { state, earned: [] };
+  const coins = earned.reduce((sum, s) => sum + s.coins, 0);
+  return { state: { ...state, coins: state.coins + coins, stickers: [...have, ...earned.map((s) => s.id)] }, earned: earned.map((s) => s.id) };
+}
+
+// Which seasonal decoration to show, or null.
+export function seasonOf(time) {
+  const now = new Date(time);
+  const year = now.getFullYear();
+  const daysFrom = (mmdd) => {
+    const [m, d] = mmdd.split('-').map(Number);
+    return Math.round((now - new Date(year, m - 1, d, now.getHours(), now.getMinutes())) / DAY);
+  };
+  const near = (mmdd, before, after) => mmdd && daysFrom(mmdd) >= -before && daysFrom(mmdd) <= after;
+  if (near(LUNAR_DATES.tet[year], 10, 7)) return 'tet';
+  if (near(LUNAR_DATES.midautumn[year], 10, 2)) return 'midautumn';
+  if (near('10-31', 11, 0)) return 'halloween';
+  if (near('12-25', 24, 1)) return 'christmas';
+  return null;
 }

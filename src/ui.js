@@ -4,8 +4,8 @@ import { analyticsEnabled } from './analytics.js';
 import { spriteCanvas, FURS } from './render/sprites.js';
 import { drawScene, ROOM_W, ROOM_H } from './render/canvas.js';
 import { runFishGame, drawFishGameIdle } from './minigame/fish.js';
-import { FOODS, SHOP_ITEMS, FISH_GAME_SECONDS, EQUIP_SLOTS } from './config.js';
-import { ageInDays, stageOf } from './rules.js';
+import { FOODS, SHOP_ITEMS, FISH_GAME_SECONDS, EQUIP_SLOTS, STICKERS } from './config.js';
+import { ageInDays, stageOf, dailyTasks, taskProgress } from './rules.js';
 
 const $ = (id) => document.getElementById(id);
 const sheet = $('sheet');
@@ -36,6 +36,8 @@ export function initUI(handlers) {
   $('settings-btn').append(spriteCanvas('gear', 4));
   $('settings-btn').addEventListener('click', handlers.settings);
   $('sound-btn').addEventListener('click', handlers.sound);
+  $('tasks-btn').prepend(spriteCanvas('star', 4));
+  $('tasks-btn').addEventListener('click', handlers.tasks);
 
   for (const btn of document.querySelectorAll('.action')) {
     btn.addEventListener('click', () => handlers[btn.dataset.action]());
@@ -69,8 +71,18 @@ export function initUI(handlers) {
 export function renderHud(state, now) {
   document.title = t('title');
   $('cat-name').textContent = state.name;
-  $('cat-age').textContent = `${t(`stage_${stageOf(state, now)}`)} · ${t('dayCount', { n: ageInDays(state, now) + 1 })}`;
+  $('cat-age').textContent = `${t('dayCount', { n: ageInDays(state, now) + 1 })} · ${t(`stage_${stageOf(state, now)}`)}`;
   $('coins').textContent = state.coins;
+
+  const ready = dailyTasks(now).filter((id) => {
+    const p = taskProgress(state, id, now);
+    return p.done >= p.task.goal && !p.claimed;
+  }).length;
+  const badge = $('tasks-badge');
+  badge.hidden = ready === 0;
+  badge.textContent = String(ready);
+  $('tasks-btn').setAttribute('aria-label', t('tasksButton'));
+  $('tasks-btn').title = t('tasksButton');
 
   const soundBtn = $('sound-btn');
   if (soundBtn.dataset.on !== String(state.sound)) {
@@ -188,6 +200,41 @@ function languageSwitch(current, onLang) {
       el('button', { class: `btn small ${lang === current ? 'active' : ''}`, type: 'button', onclick: () => onLang(lang) }, lang === 'en' ? 'English' : 'Tiếng Việt'),
     ),
   );
+}
+
+const TASK_ICONS = { feed: 'food_kibble', treat: 'food_cream', pet: 'heart', clean: 'broom', play: 'fish', fish: 'goldfish' };
+
+export function openTasks(state, now, { onClaim }) {
+  const keepScroll = sheet.open ? sheet.scrollTop : 0; // stay in place after claiming
+  const tasks = dailyTasks(now).map((id) => {
+    const { task, done, claimed } = taskProgress(state, id, now);
+    const finished = done >= task.goal;
+    const action = claimed
+      ? el('span', { class: 'note' }, `✓ ${t('claimedLabel')}`)
+      : el('button', { class: `btn small ${finished ? 'primary' : ''}`, type: 'button', disabled: finished ? false : '', onclick: () => onClaim(id) }, priceTag(task.coins));
+    const fill = el('i');
+    fill.style.width = `${(done / task.goal) * 100}%`;
+    return el('div', { class: 'row' },
+      el('span', { class: 'icon' }, spriteCanvas(TASK_ICONS[task.counter], 3)),
+      el('span', { class: 'grow' },
+        el('div', {}, t(`task_${id}`)),
+        el('div', { class: 'task-progress' }, el('div', { class: 'bar' }, fill), `${done}/${task.goal}`),
+      ),
+      action,
+    );
+  });
+  const stickers = STICKERS.map((s) => {
+    const have = state.stickers.includes(s.id);
+    return el('div', { class: `sticker ${have ? '' : 'locked'}` }, spriteCanvas(s.icon, 4), t(`sticker_${s.id}`));
+  });
+  const body = el('div', { class: 'list' },
+    el('p', { class: 'note' }, t('tasksNote')),
+    tasks,
+    el('div', { class: 'section-title' }, `${t('stickersTitle')} · ${state.stickers.length}/${STICKERS.length}`),
+    el('div', { class: 'stickers' }, stickers),
+  );
+  openSheet(t('tasksTitle'), body);
+  sheet.scrollTop = keepScroll;
 }
 
 // Install section: a button when the browser can install, steps on iPhone, nothing otherwise.
