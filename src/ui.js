@@ -1,7 +1,7 @@
 // DOM: top bar, stat bars, buttons, speech bubble and bottom sheets.
 import { t } from './i18n/index.js';
 import { analyticsEnabled } from './analytics.js';
-import { spriteCanvas, FURS } from './render/sprites.js';
+import { spriteCanvas, brokenSpriteCanvas, FURS } from './render/sprites.js';
 import { drawScene, ROOM_W, ROOM_H } from './render/canvas.js';
 import { entryToScene } from './contestRoom.js';
 import { runFishGame, drawFishGameIdle } from './minigame/fish.js';
@@ -241,7 +241,7 @@ export function openShop(state, { onBuy, onEquip, onRepair }) {
         action = el('span', { class: 'note' }, t('ownedItem'));
       }
       body.append(el('div', { class: 'row' },
-        el('span', { class: 'icon' }, spriteCanvas(item.id, 4)),
+        el('span', { class: 'icon' }, broken ? brokenSpriteCanvas(item.id, 4) : spriteCanvas(item.id, 4)),
         el('span', { class: 'grow' }, t(`item_${item.id}`), broken ? el('span', { class: 'note' }, ` (${t('brokenItem')})`) : null,
           itemNote(item) ? el('br') : null, itemNote(item) ? el('span', { class: 'note' }, itemNote(item)) : null),
         action,

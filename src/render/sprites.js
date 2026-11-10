@@ -269,3 +269,17 @@ export function spriteCanvas(name, scale = 4) {
   drawSprite(canvas.getContext('2d'), name, 0, 0);
   return canvas;
 }
+
+// An icon for a broken item: darker, with claw marks across it (only on the item itself, not around it).
+export function brokenSpriteCanvas(name, scale = 4) {
+  const canvas = spriteCanvas(name, scale);
+  const ctx = canvas.getContext('2d');
+  const { w, h } = spriteSize(name);
+  ctx.globalCompositeOperation = 'source-atop';
+  ctx.fillStyle = 'rgba(40, 25, 20, 0.35)';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#2a1d1d';
+  const left = Math.max(0, Math.floor(w / 2) - 3);
+  for (let m = 0; m < 3; m++) for (let i = 0; i < h; i++) ctx.fillRect(left + m * 2 + Math.floor(i / 3), i, 1, 1);
+  return canvas;
+}

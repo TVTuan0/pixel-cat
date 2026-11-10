@@ -2,7 +2,7 @@
 import { drawSprite } from './sprites.js';
 import { rect, blob, line, disc } from './draw.js';
 import { active } from './effects.js';
-import { ROOM_W, ROOM_H, FLOOR_Y, ITEM_BOXES } from './layout.js';
+import { ROOM_W, ROOM_H, FLOOR_Y } from './layout.js';
 import { weatherOf, seasonOf } from '../rules.js';
 
 const WALLS = {
@@ -213,12 +213,15 @@ function drawLampGlow(ctx) {
   ctx.fill();
 }
 
-function drawFairyLights(ctx, now, glow) {
+// `broken`: the right half has come down and hangs off the wall, its bulbs dark.
+function drawFairyLights(ctx, now, glow, broken = false) {
   const colors = ['#ff5a6e', '#ffd84a', '#5ab0ff', '#5cc96b'];
-  for (let x = 0; x < ROOM_W; x++) rect(ctx, x, 3 + Math.round(Math.abs(Math.sin((x / 40) * Math.PI)) * 4), 1, 1, '#4a4a5a');
-  for (let i = 0, x = 5; x < ROOM_W; x += 10, i++) {
-    const y = 4 + Math.round(Math.abs(Math.sin((x / 40) * Math.PI)) * 4);
-    const on = (Math.floor(now / 600) + i) % 4 !== 0;
+  const wireY = (x) => (broken && x > 80 ? 8 + Math.round((x - 80) * 0.9) : 3 + Math.round(Math.abs(Math.sin((x / 40) * Math.PI)) * 4));
+  const end = broken ? 124 : ROOM_W;
+  for (let x = 0; x < end; x++) rect(ctx, x, wireY(x), 1, 1, '#4a4a5a');
+  for (let i = 0, x = 5; x < end; x += 10, i++) {
+    const y = wireY(x) + 1;
+    const on = (Math.floor(now / 600) + i) % 4 !== 0 && !(broken && x > 80);
     const c = colors[i % colors.length];
     if (glow && on) {
       ctx.fillStyle = `${c}55`;
@@ -399,17 +402,150 @@ function drawPlant(ctx, now) {
   if (Math.floor(now / 800) % 2) rect(ctx, 35, 76, 1, 1, '#4caf50'); // leaf sways
 }
 
-// Claw marks and a dull shade over a broken item.
-function drawScratches(ctx, [x, y, w, h]) {
-  ctx.fillStyle = 'rgba(50, 35, 25, 0.3)';
-  ctx.fillRect(x, y, w, h);
-  const marks = Math.max(1, Math.min(3, Math.floor(w / 6)));
-  const left = x + Math.floor((w - marks * 3) / 2);
-  const top = y + Math.floor(h / 4);
-  const len = Math.max(3, Math.min(8, Math.floor(h / 2)));
-  for (let m = 0; m < marks; m++) {
-    for (let i = 0; i < len; i++) rect(ctx, left + m * 3 + Math.floor(i / 3), top + i, 1, 1, '#2a1d1d');
+// ---- How each item looks once an angry cat has broken it ----
+
+const STUFFING = '#f4f1ea';
+const STUFFING_SHADE = '#d8d2c4';
+
+// A tuft of white stuffing poking out of a tear.
+function fluff(ctx, x, y) {
+  rect(ctx, x, y, 3, 2, STUFFING);
+  rect(ctx, x + 1, y - 1, 1, 1, STUFFING);
+  rect(ctx, x, y + 1, 3, 1, STUFFING_SHADE);
+}
+
+// A jagged tear across fabric.
+function tear(ctx, x, y, length, color) {
+  for (let i = 0; i < length; i++) rect(ctx, x + i, y + (i % 2), 1, 1, color);
+}
+
+// Three slanted claw marks.
+function claws(ctx, x, y, color, length = 4) {
+  for (let m = 0; m < 3; m++) for (let i = 0; i < length; i++) rect(ctx, x + m * 2 + Math.floor(i / 2), y + i, 1, 1, color);
+}
+
+function brokenSofa(ctx) {
+  claws(ctx, 58, 54, '#2f4f8a');
+  claws(ctx, 80, 55, '#2f4f8a');
+  tear(ctx, 56, 69, 9, '#2f4f8a');
+  fluff(ctx, 58, 67);
+  tear(ctx, 78, 77, 7, '#2f4f8a');
+  fluff(ctx, 81, 75);
+  fluff(ctx, 46, 63); // armrest
+  fluff(ctx, 66, 90); // on the floor
+  rect(ctx, 86, 92, 2, 1, STUFFING);
+}
+
+function brokenBookshelf(ctx) {
+  rect(ctx, 129, 35, 8, 11, WOOD_DARK); // books pulled off the shelves...
+  rect(ctx, 138, 63, 7, 11, WOOD_DARK);
+  // ...and lying on the floor.
+  rect(ctx, 116, 89, 8, 2, '#e8384f');
+  rect(ctx, 121, 92, 7, 2, '#3a7bff');
+  rect(ctx, 130, 90, 6, 2, '#f2c14e');
+  rect(ctx, 139, 93, 6, 2, '#ffffff');
+  rect(ctx, 142, 93, 1, 2, '#9a9a9a');
+  rect(ctx, 147, 90, 2, 5, '#5cc96b');
+}
+
+function brokenFishbowl(ctx, now) {
+  line(ctx, 108, 68, 111, 71, '#ffffff'); // cracked glass
+  line(ctx, 111, 71, 109, 74, '#ffffff');
+  line(ctx, 113, 69, 115, 72, '#ffffff');
+  blob(ctx, 101, 87, 20, 3, '#9fd6ff', '#6cc3ff'); // puddle under the table
+  rect(ctx, 110, 80 + (Math.floor(now / 300) % 4) * 2, 1, 1, '#9fd6ff'); // dripping
+}
+
+function brokenFrame(ctx) {
+  line(ctx, 107, 35, 113, 40, '#ffffff');
+  line(ctx, 113, 40, 110, 43, '#ffffff');
+  line(ctx, 113, 40, 118, 38, '#ffffff');
+  rect(ctx, 103, 46, 2, 1, WOOD); // a splinter hanging off
+}
+
+function brokenRug(ctx) {
+  claws(ctx, 70, 102, '#7a2e20', 6);
+  claws(ctx, 92, 104, '#7a2e20', 6);
+  for (const x of [63, 67, 75, 88, 99, 104]) rect(ctx, x, 114, 1, 1 + (x % 2), '#c8553d'); // loose threads
+}
+
+function brokenBeanbag(ctx) {
+  tear(ctx, 97, 101, 7, '#a0521d');
+  for (const [x, y] of [[90, 110], [93, 112], [96, 111], [109, 109], [112, 111], [105, 112], [100, 113]]) rect(ctx, x, y, 1, 1, '#ffffff');
+}
+
+function brokenBed(ctx) {
+  tear(ctx, 26, 106, 9, '#7a2e45');
+  fluff(ctx, 30, 104);
+  claws(ctx, 38, 105, '#7a2e45', 3);
+}
+
+function brokenLitterHood(ctx) {
+  line(ctx, 142, 95, 145, 98, '#2a2a3a');
+  line(ctx, 145, 98, 143, 100, '#2a2a3a');
+  rect(ctx, 144, 97, 2, 1, '#e8384f'); // warning light instead of green
+}
+
+function brokenYarn(ctx, now) {
+  // A loose thread trailing across the floor.
+  const wave = Math.floor(now / 600) % 2;
+  for (let x = 86; x < 108; x++) rect(ctx, x, 112 + Math.round(Math.sin(x / 3 + wave) * 1.5), 1, 1, '#9b7bff');
+}
+
+function brokenToyMouse(ctx) {
+  fluff(ctx, 125, 110);
+  rect(ctx, 129, 113, 2, 1, '#5a5a6a');
+}
+
+// The cat tree with a frayed post, a sagging top and its toy fallen to the floor.
+function drawBrokenCatTree(ctx) {
+  rect(ctx, 4, 84, 30, 4, '#a87a50');
+  rect(ctx, 4, 87, 30, 1, '#6b4420');
+  rect(ctx, 16, 50, 5, 34, '#d9c49a');
+  for (let y = 52; y < 84; y += 3) rect(ctx, 16, y, 5, 1, '#bfa577');
+  for (let y = 53; y < 82; y += 4) { // frayed rope
+    rect(ctx, 14, y, 2, 1, '#bfa577');
+    rect(ctx, 21, y + 2, 2, 1, '#bfa577');
   }
+  for (let i = 0; i < 24; i++) { // top platform, tilted
+    const drop = Math.floor(i / 8);
+    rect(ctx, 5 + i, 46 + drop, 1, 3, '#7a6ad6');
+    rect(ctx, 5 + i, 49 + drop, 1, 1, '#4a3a8a');
+  }
+  rect(ctx, 21, 64, 13, 3, '#7a6ad6');
+  rect(ctx, 21, 66, 13, 1, '#4a3a8a');
+  claws(ctx, 23, 64, '#4a3a8a', 3);
+  rect(ctx, 26, 50, 1, 2, '#4a3a2a'); // the string snapped
+  rect(ctx, 30, 88, 3, 3, '#ff5a6e');
+}
+
+// The lamp with a crooked, cracked shade. It no longer lights up.
+function drawBrokenLamp(ctx) {
+  rect(ctx, 152, 38, 2, 46, '#4a4a5a');
+  rect(ctx, 148, 84, 10, 2, '#4a4a5a');
+  for (let i = 0; i < 10; i++) {
+    const w = 8 + Math.floor(i * 0.5);
+    rect(ctx, 153 - Math.floor(w / 2) + Math.floor(i / 3) - 1, 29 + i, w, 1, '#c8a860');
+  }
+  line(ctx, 150, 30, 153, 35, '#6b4420');
+  line(ctx, 153, 35, 151, 38, '#6b4420');
+}
+
+// The plant knocked over, its pot on its side and soil spilled on the floor.
+function drawBrokenPlant(ctx) {
+  rect(ctx, 30, 81, 11, 6, '#7a3a2a');
+  rect(ctx, 31, 82, 9, 4, '#d0704a');
+  rect(ctx, 41, 82, 1, 4, '#3a2a1e'); // open top of the pot
+  for (const [x, y] of [[42, 84], [44, 85], [46, 84], [43, 86], [47, 86]]) rect(ctx, x, y, 2, 1, '#5e4634');
+  for (const [x, y] of [[44, 82], [47, 81], [46, 83], [49, 82], [50, 84]]) rect(ctx, x, y, 2, 1, '#4caf50');
+}
+
+// The feeder knocked on its side with kibble everywhere.
+function drawBrokenFeeder(ctx) {
+  rect(ctx, 60, 103, 11, 6, '#3a3a5a');
+  rect(ctx, 61, 104, 9, 4, '#d8e0ea');
+  rect(ctx, 63, 105, 3, 2, '#b06a3b');
+  for (const [x, y] of [[57, 108], [72, 107], [74, 110], [67, 111], [70, 112], [59, 111]]) rect(ctx, x, y, 2, 1, '#b06a3b');
 }
 
 function drawCushion(ctx) {
@@ -431,17 +567,17 @@ export function drawRoom(ctx, state, now, clock) {
   const owned = new Set(state.owned);
   const broken = new Set(state.broken ?? []);
   const has = (id) => owned.has(id);
-  const works = (id) => owned.has(id) && !broken.has(id);
-  // Draws an owned item, with scratches when it is broken.
-  const item = (id, draw) => {
+  // Draws an owned item. When broken, `damage` is drawn on top, or `brokenDraw` replaces it.
+  const item = (id, draw, { damage = null, brokenDraw = null } = {}) => {
     if (!has(id)) return;
+    if (broken.has(id) && brokenDraw) return brokenDraw();
     draw();
-    if (broken.has(id)) drawScratches(ctx, ITEM_BOXES[id]);
+    if (broken.has(id)) damage?.();
   };
 
   drawWall(ctx, state.equipped.wall);
   drawFloor(ctx, state.equipped.floor);
-  item('decor_lights', () => drawFairyLights(ctx, now, false));
+  item('decor_lights', () => drawFairyLights(ctx, now, false, broken.has('decor_lights')));
 
   drawWindow(ctx, time, now);
   drawCurtains(ctx, now);
@@ -450,28 +586,28 @@ export function drawRoom(ctx, state, now, clock) {
     rect(ctx, 104, 32, 18, 14, WOOD);
     rect(ctx, 106, 34, 14, 10, '#bfe6ff');
     drawSprite(ctx, 'fish', 109, 36);
-  });
+  }, { damage: () => brokenFrame(ctx) });
   drawTrophyShelf(ctx, owned);
   drawSunbeam(ctx, time);
 
-  item('cat_tree', () => drawCatTree(ctx, now));
-  item('sofa', () => drawSofa(ctx));
-  item('bookshelf', () => drawBookshelf(ctx));
+  item('cat_tree', () => drawCatTree(ctx, now), { brokenDraw: () => drawBrokenCatTree(ctx) });
+  item('sofa', () => drawSofa(ctx), { damage: () => brokenSofa(ctx) });
+  item('bookshelf', () => drawBookshelf(ctx), { damage: () => brokenBookshelf(ctx) });
   drawSeason(ctx, seasonOf(clock), now, has('bookshelf'));
-  item('lamp', () => drawLamp(ctx, works('lamp') && (state.asleep || isNight(time.getHours()))));
-  item('decor_plant', () => drawPlant(ctx, now));
-  item('decor_fishbowl', () => drawFishbowlTable(ctx, now));
+  item('lamp', () => drawLamp(ctx, state.asleep || isNight(time.getHours())), { brokenDraw: () => drawBrokenLamp(ctx) });
+  item('decor_plant', () => drawPlant(ctx, now), { brokenDraw: () => drawBrokenPlant(ctx) });
+  item('decor_fishbowl', () => drawFishbowlTable(ctx, now), { damage: () => brokenFishbowl(ctx, now) });
 
-  item('decor_rug', () => drawRug(ctx));
-  if (has('soft_bed')) item('soft_bed', () => drawBed(ctx));
+  item('decor_rug', () => drawRug(ctx), { damage: () => brokenRug(ctx) });
+  if (has('soft_bed')) item('soft_bed', () => drawBed(ctx), { damage: () => brokenBed(ctx) });
   else if (has('cushion')) drawCushion(ctx);
-  item('decor_beanbag', () => drawBeanbag(ctx));
+  item('decor_beanbag', () => drawBeanbag(ctx), { damage: () => brokenBeanbag(ctx) });
   if (has('bowl')) drawBowl(ctx, now);
-  item('auto_feeder', () => drawSprite(ctx, 'auto_feeder', 61, 99));
+  item('auto_feeder', () => drawSprite(ctx, 'auto_feeder', 61, 99), { brokenDraw: () => drawBrokenFeeder(ctx) });
   if (has('litter')) drawLitter(ctx, Math.min(...state.cats.map((c) => c.stats.cleanliness)), now);
-  item('auto_litter', () => drawSprite(ctx, 'auto_litter', 138, 94));
-  item('toy_yarn', () => drawSprite(ctx, 'toy_yarn', 80, 108));
-  item('toy_mouse', () => drawSprite(ctx, 'toy_mouse', 122, 112, Math.floor(now / 2000) % 2 === 0));
+  item('auto_litter', () => drawSprite(ctx, 'auto_litter', 138, 94), { damage: () => brokenLitterHood(ctx) });
+  item('toy_yarn', () => drawSprite(ctx, 'toy_yarn', 80, 108), { damage: () => brokenYarn(ctx, now) });
+  item('toy_mouse', () => drawSprite(ctx, 'toy_mouse', 122, 112, Math.floor(now / 2000) % 2 === 0), { damage: () => brokenToyMouse(ctx) });
 }
 
 // Darkens the room when the lights are off; window, lamp and fairy lights still glow.
