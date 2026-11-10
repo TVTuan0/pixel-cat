@@ -1,15 +1,42 @@
 // Fish Catch: fish fall from the sky, move the basket under them.
 import { drawSprite, spriteSize } from '../render/sprites.js';
+import { F, fineShape } from '../render/fine.js';
 
 const W = 96;
 const H = 120;
 const BASKET_Y = H - 14;
 const GOLD_CHANCE = 0.12;
 
-export function runFishGame(canvas, { seconds, onTick, onCatch, onEnd }) {
+// The canvas has 2 pixels per game unit, like the room, so the art can be finer.
+function setUp(canvas) {
+  canvas.width = W * 2;
+  canvas.height = H * 2;
   const ctx = canvas.getContext('2d');
-  canvas.width = W;
-  canvas.height = H;
+  ctx.imageSmoothingEnabled = false;
+  ctx.setTransform(2, 0, 0, 2, 0, 0);
+  return ctx;
+}
+
+// Sky with soft bands and clouds, grass at the bottom. Fine pixels (half a unit).
+function drawSkyAndGrass(ctx, now = 0) {
+  F(ctx, 0, 0, 192, 240, '#8fd3ff');
+  for (let y = 0; y < 220; y += 32) F(ctx, 0, y, 192, 12, '#a6dcff');
+  for (const [offset, y, w] of [[0, 30, 40], [110, 90, 32], [60, 150, 36]]) {
+    const x = Math.round(((now / 120 + offset) % 260) - 40);
+    fineShape(ctx, x, y + 4, w, 10, '#ffffff', '#ffffff', { round: 2 });
+    fineShape(ctx, x + 8, y, Math.round(w * 0.5), 10, '#ffffff', '#ffffff', { round: 2 });
+    F(ctx, x + 4, y + 13, w - 8, 1, '#d8eefa');
+  }
+  F(ctx, 0, 226, 192, 14, '#5cc96b');
+  F(ctx, 0, 226, 192, 2, '#3e9a4d');
+  for (let x = 1; x < 192; x += 5) {
+    F(ctx, x, 222, 1, 4, '#3e9a4d');
+    F(ctx, x + 2, 224, 1, 2, '#7ad88a');
+  }
+}
+
+export function runFishGame(canvas, { seconds, onTick, onCatch, onEnd }) {
+  const ctx = setUp(canvas);
   const basket = spriteSize('basket');
   const fishSize = spriteSize('fish');
 
@@ -35,16 +62,7 @@ export function runFishGame(canvas, { seconds, onTick, onCatch, onEnd }) {
   canvas.addEventListener('pointermove', pointerToX);
   window.addEventListener('keydown', onKey);
 
-  function drawBackground() {
-    ctx.fillStyle = '#8fd3ff';
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#b5e3ff';
-    for (let y = 0; y < H - 10; y += 16) ctx.fillRect(0, y, W, 6);
-    ctx.fillStyle = '#5cc96b';
-    ctx.fillRect(0, H - 6, W, 6);
-    ctx.fillStyle = '#3e9a4d';
-    for (let x = 0; x < W; x += 6) ctx.fillRect(x, H - 7, 2, 1);
-  }
+  const drawBackground = () => drawSkyAndGrass(ctx, performance.now());
 
   function step(now) {
     if (stopped) return;
@@ -106,13 +124,8 @@ export function runFishGame(canvas, { seconds, onTick, onCatch, onEnd }) {
 }
 
 export function drawFishGameIdle(canvas) {
-  const ctx = canvas.getContext('2d');
-  canvas.width = W;
-  canvas.height = H;
-  ctx.fillStyle = '#8fd3ff';
-  ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#5cc96b';
-  ctx.fillRect(0, H - 6, W, 6);
+  const ctx = setUp(canvas);
+  drawSkyAndGrass(ctx);
   drawSprite(ctx, 'fish', 30, 30);
   drawSprite(ctx, 'goldfish', 58, 52);
   drawSprite(ctx, 'fish', 40, 74);

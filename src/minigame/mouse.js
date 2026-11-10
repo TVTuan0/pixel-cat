@@ -1,5 +1,6 @@
 // Mouse Catch: mice peek out of holes in the wall, tap them before they hide.
 import { drawSprite } from '../render/sprites.js';
+import { F, fineShape } from '../render/fine.js';
 
 const W = 96;
 const H = 120;
@@ -20,22 +21,34 @@ const MOUSE_COLORS = {
   gold: { fur: '#ffd84a', dark: '#c89a1e' },
 };
 
-function drawWall(ctx) {
-  ctx.fillStyle = '#e8d2b0';
-  ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#d9bf98';
-  for (let y = 6; y < H; y += 10) for (let x = (y / 10) % 2 ? 0 : 8; x < W; x += 16) ctx.fillRect(x, y, 12, 1);
-  ctx.fillStyle = '#b9805a';
-  ctx.fillRect(0, H - 8, W, 8);
+// The canvas has 2 pixels per game unit, like the room, so the art can be finer.
+function setUp(canvas) {
+  canvas.width = W * 2;
+  canvas.height = H * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.setTransform(2, 0, 0, 2, 0, 0);
+  return ctx;
 }
 
+// A plaster wall with faint bricks and a wooden skirting. Fine pixels (half a unit).
+function drawWall(ctx) {
+  F(ctx, 0, 0, 192, 240, '#ecd6b4');
+  for (let y = 0, row = 0; y < 224; y += 14, row++) {
+    F(ctx, 0, y + 13, 192, 1, '#dcc29c');
+    for (let x = row % 2 ? 0 : 16; x < 192; x += 32) F(ctx, x, y, 1, 13, '#dcc29c');
+    for (let x = row % 2 ? 3 : 19; x < 192; x += 32) F(ctx, x, y + 1, 10, 1, '#f6e4c8');
+  }
+  F(ctx, 0, 224, 192, 16, '#b9805a');
+  F(ctx, 0, 224, 192, 2, '#d0986a');
+  F(ctx, 0, 238, 192, 2, '#8a5a3a');
+}
+
+// A mouse hole: an arch in the skirting-board style, dark inside.
 function drawHole(ctx, { x, y }) {
-  ctx.fillStyle = '#5a3a1e';
-  ctx.fillRect(x - 9, y - 2, 18, 6);
-  ctx.fillRect(x - 7, y - 5, 14, 3);
-  ctx.fillStyle = '#1a1210';
-  ctx.fillRect(x - 8, y - 1, 16, 5);
-  ctx.fillRect(x - 6, y - 4, 12, 3);
+  fineShape(ctx, x * 2 - 19, y * 2 - 11, 38, 22, '#1a1210', '#5a3a1e', { round: 1.6 });
+  F(ctx, x * 2 - 19, y * 2 + 6, 38, 4, '#5a3a1e');
+  F(ctx, x * 2 - 14, y * 2 - 9, 10, 2, '#3a2a1e'); // a little depth at the top
 }
 
 // How far the thing has risen out of its hole: 0 hidden, 1 fully out.
@@ -45,21 +58,32 @@ function rise(pop, now) {
   return Math.max(0, Math.min(1, age / 0.12, left / 0.12));
 }
 
+// A mouse peeking out, its chin at (x, y) in game units.
 function drawMouse(ctx, x, y, colors) {
   const { fur, dark } = colors;
-  ctx.fillStyle = dark;
-  ctx.fillRect(x - 6, y - 12, 4, 4); // ears
-  ctx.fillRect(x + 2, y - 12, 4, 4);
-  ctx.fillStyle = '#ff8fa3';
-  ctx.fillRect(x - 5, y - 11, 2, 2);
-  ctx.fillRect(x + 3, y - 11, 2, 2);
-  ctx.fillStyle = fur;
-  ctx.fillRect(x - 5, y - 9, 10, 9);
-  ctx.fillStyle = '#1a1a2e';
-  ctx.fillRect(x - 3, y - 6, 1, 2); // eyes
-  ctx.fillRect(x + 2, y - 6, 1, 2);
-  ctx.fillStyle = '#ff5a6e';
-  ctx.fillRect(x - 1, y - 3, 2, 1); // nose
+  const cx = x * 2, cy = y * 2;
+  for (const ex of [cx - 14, cx + 4]) { // round ears with pink insides
+    fineShape(ctx, ex, cy - 26, 10, 10, dark, '#3a2a2a', { round: 2 });
+    fineShape(ctx, ex + 2, cy - 24, 6, 6, '#ff8fa3', '#ff8fa3', { round: 2 });
+  }
+  fineShape(ctx, cx - 11, cy - 20, 22, 20, fur, '#3a2a2a', {
+    round: 2.2,
+    inside: () => {
+      F(ctx, cx - 9, cy - 18, 6, 2, 'rgba(255,255,255,0.35)');
+      F(ctx, cx + 5, cy - 18, 6, 18, dark);
+      fineShape(ctx, cx - 6, cy - 9, 12, 9, '#f4f0ea', '#f4f0ea', { round: 2 }); // muzzle
+    },
+  });
+  for (const ex of [cx - 7, cx + 4]) { // eyes with a shine
+    F(ctx, ex, cy - 14, 3, 4, '#1a1a2e');
+    F(ctx, ex, cy - 14, 1, 1, '#ffffff');
+  }
+  F(ctx, cx - 2, cy - 8, 4, 3, '#ff5a6e'); // nose
+  F(ctx, cx - 1, cy - 8, 1, 1, '#ffb3c1');
+  for (const dy of [-6, -3]) { // whiskers
+    F(ctx, cx - 16, cy + dy, 9, 1, '#5a4a4a');
+    F(ctx, cx + 7, cy + dy, 9, 1, '#5a4a4a');
+  }
 }
 
 function drawPopUp(ctx, pop, now) {
@@ -77,9 +101,7 @@ function drawPopUp(ctx, pop, now) {
 }
 
 export function runMouseGame(canvas, { seconds, onTick, onCatch, onEnd }) {
-  const ctx = canvas.getContext('2d');
-  canvas.width = W;
-  canvas.height = H;
+  const ctx = setUp(canvas);
 
   let pops = []; // { hole, kind, start, end }
   let flashes = []; // { x, y, text, until }
@@ -162,9 +184,7 @@ export function runMouseGame(canvas, { seconds, onTick, onCatch, onEnd }) {
 }
 
 export function drawMouseGameIdle(canvas) {
-  const ctx = canvas.getContext('2d');
-  canvas.width = W;
-  canvas.height = H;
+  const ctx = setUp(canvas);
   drawWall(ctx);
   for (const hole of HOLES) drawHole(ctx, hole);
   const now = 1000;
