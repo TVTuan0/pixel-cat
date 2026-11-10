@@ -1,9 +1,13 @@
 // Draws the room: wall, floor, furniture, window weather and light.
 import { drawSprite } from './sprites.js';
 import { rect, blob, line, disc } from './draw.js';
-import { active } from './effects.js';
 import { ROOM_W, ROOM_H, FLOOR_Y, ROOM_DOOR } from './layout.js';
 import { weatherOf, seasonOf } from '../rules.js';
+import {
+  WOOD, WOOD_DARK, drawWallTrim, drawPlanks, drawTiles, drawCarpet, drawWindowFrame, drawCurtains, drawClock, drawGardenDoor,
+  drawCatTree, drawSofa, drawBookshelf, drawLamp, drawFishbowlTable, drawFrame, drawBed, drawCushion, drawBeanbag, drawRug,
+  drawLitter, drawBowl, drawPlant,
+} from './furniture.js';
 
 const WALLS = {
   default: { base: '#ddd0b8', accent: '#cbbb9c', pattern: 'old' },
@@ -20,28 +24,8 @@ const FLOORS = {
   floor_carpet: { base: '#b49ad6', line: '#9a7fc0', pattern: 'speckle' },
 };
 
-const WOOD = '#8a5a2a';
-const WOOD_DARK = '#5a3a1e';
-const WOOD_LIGHT = '#b5824e';
 
-// Wood trim on every wall, like a real room: a strip under the ceiling, a rail across the middle, and skirting at the floor.
-function drawWallTrim(ctx) {
-  ctx.fillStyle = 'rgba(110, 70, 30, 0.08)';
-  ctx.fillRect(0, 52, ROOM_W, FLOOR_Y - 52); // the lower wall a touch darker
-  rect(ctx, 0, 0, ROOM_W, 3, WOOD);
-  rect(ctx, 0, 3, ROOM_W, 1, WOOD_DARK);
-  rect(ctx, 0, 49, ROOM_W, 1, WOOD_LIGHT);
-  rect(ctx, 0, 50, ROOM_W, 2, WOOD);
-  rect(ctx, 0, 52, ROOM_W, 1, WOOD_DARK);
-  rect(ctx, 0, FLOOR_Y - 4, ROOM_W, 1, WOOD_LIGHT);
-  rect(ctx, 0, FLOOR_Y - 3, ROOM_W, 3, WOOD);
-  // Corners in shadow, for depth.
-  for (let i = 0; i < 6; i++) {
-    ctx.fillStyle = `rgba(60, 35, 15, ${0.12 - i * 0.02})`;
-    ctx.fillRect(i, 0, 1, FLOOR_Y);
-    ctx.fillRect(ROOM_W - 1 - i, 0, 1, FLOOR_Y);
-  }
-}
+
 
 // A soft shadow on the floor under furniture: [x, y, w] where y is the bottom of the item.
 function shadow(ctx, x, y, w) {
@@ -85,23 +69,14 @@ function drawWall(ctx, style) {
       }
     }
   }
-  drawWallTrim(ctx);
+  drawWallTrim(ctx, FLOOR_Y);
 }
 
 function drawFloor(ctx, style) {
   const f = FLOORS[style ?? 'default'];
   rect(ctx, 0, FLOOR_Y, ROOM_W, ROOM_H - FLOOR_Y, f.base);
   if (f.pattern === 'planks') {
-    // Rows of planks, each plank a slightly different shade, with seams and a little grain.
-    for (let top = FLOOR_Y, row = 0; top < ROOM_H; top += 7, row++) {
-      for (let x = -((row * 11) % 28), k = 0; x < ROOM_W; x += 28, k++) {
-        const tone = [f.base, f.light, f.dark][(row * 7 + k * 5) % 3];
-        rect(ctx, x, top, 28, 6, tone);
-        rect(ctx, x + 4 + ((row + k) % 3) * 6, top + 2 + (k % 2) * 2, 7, 1, f.dark); // grain
-        rect(ctx, x + 27, top, 1, 6, f.line);
-      }
-      rect(ctx, 0, top + 6, ROOM_W, 1, f.line);
-    }
+    drawPlanks(ctx, f, FLOOR_Y);
     if (f.shine) {
       // Polished: a soft glow from the window, fading out to the sides.
       const glow = ctx.createLinearGradient(20, 0, 140, 0);
@@ -117,11 +92,9 @@ function drawFloor(ctx, style) {
       for (let i = 0; i < 5; i++) rect(ctx, 96 + i, 80 + (i % 2), 1, 1, '#5e4634');
     }
   } else if (f.pattern === 'checker') {
-    for (let y = FLOOR_Y, r = 0; y < ROOM_H; y += 8, r++) {
-      for (let x = (r % 2) * 8; x < ROOM_W; x += 16) rect(ctx, x, y, 8, 8, f.line);
-    }
+    drawTiles(ctx, f, FLOOR_Y);
   } else {
-    for (let y = FLOOR_Y + 3; y < ROOM_H; y += 5) for (let x = (y % 3) * 3; x < ROOM_W; x += 9) rect(ctx, x, y, 1, 1, f.line);
+    drawCarpet(ctx, f, FLOOR_Y);
   }
 }
 
@@ -179,92 +152,15 @@ function drawTown(ctx, left, bottom, night) {
 }
 
 function drawWindow(ctx, clock, now) {
-  rect(ctx, 56, 12, 32, 28, WOOD);
   drawSky(ctx, clock, now);
-  rect(ctx, 71, 14, 2, 24, WOOD);
-  rect(ctx, 58, 25, 28, 2, WOOD);
-  rect(ctx, 54, 40, 36, 2, '#6b4420');
+  drawWindowFrame(ctx);
 }
 
-function drawCurtains(ctx, now) {
-  rect(ctx, 46, 9, 52, 2, '#6b4420');
-  const sway = Math.round(Math.sin(now / 900));
-  for (const [x, flip] of [[48, 1], [87, -1]]) {
-    rect(ctx, x, 11, 9, 30, '#e07a8f');
-    rect(ctx, x + sway * flip, 41, 9, 5, '#e07a8f');
-    for (const fx of [2, 5]) rect(ctx, x + fx, 11, 1, 30, '#c45d74');
-    rect(ctx, x + (flip > 0 ? 7 : 1), 30, 1, 3, '#f2c14e'); // tie-back
-  }
-}
 
-function drawClock(ctx, clock) {
-  const cx = 113, cy = 19;
-  disc(ctx, cx, cy, 7, '#fffaf0', WOOD);
-  for (const [dx, dy] of [[0, -5], [5, 0], [0, 5], [-5, 0]]) rect(ctx, cx + dx, cy + dy, 1, 1, WOOD_DARK);
-  const minutes = clock.getMinutes();
-  const hours = (clock.getHours() % 12) + minutes / 60;
-  const ha = (hours / 12) * Math.PI * 2;
-  const ma = (minutes / 60) * Math.PI * 2;
-  line(ctx, cx, cy, cx + Math.round(Math.sin(ha) * 3), cy - Math.round(Math.cos(ha) * 3), '#2a1d3a');
-  line(ctx, cx, cy, cx + Math.round(Math.sin(ma) * 5), cy - Math.round(Math.cos(ma) * 5), '#c8553d');
-}
 
-function drawCatTree(ctx, now) {
-  rect(ctx, 4, 84, 30, 4, '#a87a50');
-  rect(ctx, 4, 87, 30, 1, '#6b4420');
-  rect(ctx, 16, 50, 5, 34, '#d9c49a');
-  for (let y = 52; y < 84; y += 3) rect(ctx, 16, y, 5, 1, '#bfa577');
-  rect(ctx, 5, 46, 24, 4, '#7a6ad6');
-  rect(ctx, 5, 49, 24, 1, '#4a3a8a');
-  rect(ctx, 21, 64, 13, 3, '#7a6ad6');
-  rect(ctx, 21, 66, 13, 1, '#4a3a8a');
-  const swing = Math.round(Math.sin(now / 500));
-  line(ctx, 26, 50, 26 + swing, 56, '#4a3a2a');
-  rect(ctx, 25 + swing, 56, 3, 3, '#ff5a6e');
-}
 
-function drawSofa(ctx) {
-  const base = '#5b8bd9', dark = '#2f4f8a', light = '#7fa6e6';
-  blob(ctx, 46, 50, 52, 20, base, dark);
-  rect(ctx, 71, 52, 1, 14, dark);
-  blob(ctx, 44, 60, 10, 24, light, dark);
-  blob(ctx, 90, 60, 10, 24, light, dark);
-  rect(ctx, 53, 66, 37, 6, light);
-  rect(ctx, 53, 72, 37, 1, dark);
-  rect(ctx, 53, 73, 37, 9, base);
-  rect(ctx, 53, 82, 37, 1, dark);
-  rect(ctx, 48, 84, 3, 3, WOOD_DARK);
-  rect(ctx, 93, 84, 3, 3, WOOD_DARK);
-}
 
-function drawBookshelf(ctx) {
-  rect(ctx, 126, 30, 22, 57, WOOD);
-  rect(ctx, 128, 32, 18, 53, WOOD_DARK);
-  const colors = ['#e8384f', '#3a7bff', '#f2c14e', '#5cc96b', '#9b7bff', '#ff8fa3'];
-  [46, 60, 74].forEach((y, shelf) => {
-    rect(ctx, 128, y, 18, 2, WOOD);
-    let x = 129;
-    for (let i = 0; x < 144 && i < 6; i++) {
-      const h = 7 + ((i + shelf) % 3) * 2;
-      const w = 2 + ((i + shelf * 2) % 2);
-      rect(ctx, x, y - h, w, h, colors[(i + shelf * 2) % colors.length]);
-      x += w + 1;
-    }
-  });
-  rect(ctx, 130, 79, 6, 5, '#d0704a'); // little pot on the bottom shelf
-  rect(ctx, 131, 76, 4, 3, '#4caf50');
-}
 
-function drawLamp(ctx, lit) {
-  rect(ctx, 152, 38, 2, 46, '#4a4a5a');
-  rect(ctx, 148, 84, 10, 2, '#4a4a5a');
-  for (let i = 0; i < 10; i++) {
-    const w = 8 + Math.floor(i * 0.5);
-    rect(ctx, 153 - Math.floor(w / 2), 28 + i, w, 1, lit ? '#fff2b0' : '#ffd27f');
-  }
-  rect(ctx, 149, 28, 8, 1, WOOD);
-  rect(ctx, 147, 37, 12, 1, WOOD);
-}
 
 function drawLampGlow(ctx) {
   ctx.fillStyle = 'rgba(255, 214, 140, 0.18)';
@@ -309,56 +205,10 @@ function drawSunbeam(ctx, clock) {
   ctx.fill();
 }
 
-function drawFishbowlTable(ctx, now) {
-  rect(ctx, 101, 76, 20, 3, WOOD);
-  rect(ctx, 103, 79, 2, 8, WOOD_DARK);
-  rect(ctx, 117, 79, 2, 8, WOOD_DARK);
-  drawSprite(ctx, 'decor_fishbowl', 106, 67);
-  const rise = Math.floor(now / 250) % 5;
-  rect(ctx, 110, 72 - rise, 1, 1, '#e8f6ff');
-}
 
-function drawBed(ctx) {
-  rect(ctx, 22, 103, 24, 1, '#7a2e45');
-  rect(ctx, 20, 104, 28, 8, '#7a2e45');
-  rect(ctx, 22, 112, 24, 1, '#7a2e45');
-  rect(ctx, 21, 104, 26, 7, '#c0587a');
-  rect(ctx, 24, 105, 20, 5, '#ffb3c6');
-}
 
-function drawBeanbag(ctx) {
-  blob(ctx, 92, 97, 20, 13, '#ff9f43', '#a0521d');
-  blob(ctx, 95, 94, 14, 7, '#ff9f43', '#a0521d');
-  rect(ctx, 96, 96, 4, 2, '#ffc785');
-  rect(ctx, 94, 101, 2, 3, '#ffc785');
-}
 
-function drawRug(ctx) {
-  rect(ctx, 64, 100, 40, 1, '#c8553d');
-  rect(ctx, 60, 101, 48, 12, '#c8553d');
-  rect(ctx, 64, 113, 40, 1, '#c8553d');
-  rect(ctx, 63, 103, 42, 1, '#f2c14e');
-  rect(ctx, 63, 110, 42, 1, '#f2c14e');
-}
 
-function drawLitter(ctx, cleanliness, now) {
-  drawSprite(ctx, 'litter', 138, 100);
-  const specks = Math.ceil((100 - cleanliness) / 15);
-  const spots = [[141, 101], [146, 101], [150, 101], [143, 100], [148, 100], [140, 100], [151, 100]];
-  for (let i = 0; i < specks && i < spots.length; i++) rect(ctx, spots[i][0], spots[i][1], 2, 1, '#8a6a4a');
-  if (cleanliness < 40) {
-    const wave = Math.floor(now / 300) % 2;
-    for (const sx of [142, 147, 152]) {
-      rect(ctx, sx + wave, 93, 1, 2, '#7fae5a');
-      rect(ctx, sx + 1 - wave, 95, 1, 2, '#7fae5a');
-    }
-  }
-  if (active('sparkle', now)) {
-    const f = Math.floor(now / 120) % 2;
-    drawSprite(ctx, 'sparkle', 140 + f * 6, 95 - f);
-    drawSprite(ctx, 'sparkle', 148 - f * 4, 97 + f);
-  }
-}
 
 // Seasonal decorations: one thing on the wall at the top left, one on top of the bookshelf.
 function drawLantern(ctx, x, y, now) {
@@ -461,10 +311,6 @@ function drawTrophyShelf(ctx, owned) {
   won.forEach((id, i) => drawSprite(ctx, id, 102 + i * 7, 46));
 }
 
-function drawPlant(ctx, now) {
-  drawSprite(ctx, 'decor_plant', 34, 73);
-  if (Math.floor(now / 800) % 2) rect(ctx, 35, 76, 1, 1, '#4caf50'); // leaf sways
-}
 
 // ---- How each item looks once an angry cat has broken it ----
 
@@ -612,18 +458,7 @@ function drawBrokenFeeder(ctx) {
   for (const [x, y] of [[57, 108], [72, 107], [74, 110], [67, 111], [70, 112], [59, 111]]) rect(ctx, x, y, 2, 1, '#b06a3b');
 }
 
-function drawCushion(ctx) {
-  blob(ctx, 22, 105, 24, 7, '#c9b08a', '#6b5040');
-  rect(ctx, 28, 107, 2, 1, '#a08860'); // worn patches
-  rect(ctx, 38, 108, 3, 1, '#a08860');
-}
 
-function drawBowl(ctx, now) {
-  drawSprite(ctx, 'bowl', 50, 106);
-  if (active('bowlFull', now) || active('eat', now)) {
-    for (let i = 0; i < 3; i++) rect(ctx, 52 + i * 2, 104 + (i % 2), 2, 2, '#b06a3b');
-  }
-}
 
 // The floor gets dirtier as the dirtiest cat's cleanliness drops: stains, then muddy paw prints, then messes with flies.
 const DIRT = { stains: 40, paws: 25, mess: 10 };
@@ -665,24 +500,6 @@ function drawMesses(ctx, cleanliness, now) {
   }
 }
 
-// The door to the garden in the back left corner. Locked (with a padlock) until the player buys it;
-// then its window shows the green garden outside.
-function drawGardenDoor(ctx, open) {
-  const [x, y, w, h] = ROOM_DOOR;
-  rect(ctx, x, y, w, h, WOOD_DARK);
-  rect(ctx, x + 1, y + 1, w - 2, h - 1, open ? '#5aa83e' : '#a86a34');
-  rect(ctx, x + 1, y + 1, 1, h - 1, open ? '#7ccf5a' : '#c0824a'); // light on the edge
-  rect(ctx, x + 3, y + 3, w - 6, 9, open ? '#bfe9a8' : '#8e5426'); // upper panel (glass once open)
-  rect(ctx, x + 3, y + 15, w - 6, 14, open ? '#4c9434' : '#8e5426'); // lower panel
-  rect(ctx, x + 3, y + 3, w - 6, 1, open ? '#e4f7d8' : '#6e4020');
-  rect(ctx, x + 3, y + 15, w - 6, 1, open ? '#3e7a2a' : '#6e4020');
-  rect(ctx, x + w - 4, y + 18, 2, 2, '#ffd84a'); // brass knob
-  rect(ctx, x + w - 4, y + 18, 1, 1, '#fff2b0');
-  if (!open) {
-    rect(ctx, x + w - 5, y + 21, 4, 3, '#c8a020'); // padlock
-    rect(ctx, x + w - 4, y + 19, 2, 2, '#8a7a60');
-  }
-}
 
 // Everything behind the cat. Only items the player owns are in the room.
 export function drawRoom(ctx, state, now, clock) {
@@ -705,15 +522,11 @@ export function drawRoom(ctx, state, now, clock) {
   for (const [id, [x, y, w]] of Object.entries(SHADOWS)) if (has(id)) shadow(ctx, x, y, w);
   item('decor_lights', () => drawFairyLights(ctx, now, false, broken.has('decor_lights')));
 
-  drawGardenDoor(ctx, has('garden_door'));
+  drawGardenDoor(ctx, has('garden_door'), ROOM_DOOR);
   drawWindow(ctx, time, now);
   drawCurtains(ctx, now);
   drawClock(ctx, time);
-  item('decor_frame', () => {
-    rect(ctx, 104, 32, 18, 14, WOOD);
-    rect(ctx, 106, 34, 14, 10, '#bfe6ff');
-    drawSprite(ctx, 'fish', 109, 36);
-  }, { damage: () => brokenFrame(ctx) });
+  item('decor_frame', () => drawFrame(ctx), { damage: () => brokenFrame(ctx) });
   drawTrophyShelf(ctx, owned);
   drawSunbeam(ctx, time);
 
