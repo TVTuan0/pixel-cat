@@ -13,14 +13,47 @@ const WALLS = {
 };
 
 const FLOORS = {
-  default: { base: '#a07e62', line: '#8c6b50', pattern: 'planks', worn: true },
-  floor_dark: { base: '#6e4a3a', line: '#5a3a2c', pattern: 'planks' },
+  default: { base: '#a07e62', light: '#a8866a', dark: '#967459', line: '#7e5f46', pattern: 'planks', worn: true },
+  floor_dark: { base: '#6e4a3a', light: '#7a5444', dark: '#62402f', line: '#4a2e22', pattern: 'planks' },
+  floor_oak: { base: '#c4803f', light: '#d39150', dark: '#b37036', line: '#7a4a22', pattern: 'planks', shine: true },
   floor_tiles: { base: '#f3ead8', line: '#9fd3c7', pattern: 'checker' },
   floor_carpet: { base: '#b49ad6', line: '#9a7fc0', pattern: 'speckle' },
 };
 
 const WOOD = '#8a5a2a';
 const WOOD_DARK = '#5a3a1e';
+const WOOD_LIGHT = '#b5824e';
+
+// Wood trim on every wall, like a real room: a strip under the ceiling, a rail across the middle, and skirting at the floor.
+function drawWallTrim(ctx) {
+  ctx.fillStyle = 'rgba(110, 70, 30, 0.08)';
+  ctx.fillRect(0, 52, ROOM_W, FLOOR_Y - 52); // the lower wall a touch darker
+  rect(ctx, 0, 0, ROOM_W, 3, WOOD);
+  rect(ctx, 0, 3, ROOM_W, 1, WOOD_DARK);
+  rect(ctx, 0, 49, ROOM_W, 1, WOOD_LIGHT);
+  rect(ctx, 0, 50, ROOM_W, 2, WOOD);
+  rect(ctx, 0, 52, ROOM_W, 1, WOOD_DARK);
+  rect(ctx, 0, FLOOR_Y - 4, ROOM_W, 1, WOOD_LIGHT);
+  rect(ctx, 0, FLOOR_Y - 3, ROOM_W, 3, WOOD);
+  // Corners in shadow, for depth.
+  for (let i = 0; i < 6; i++) {
+    ctx.fillStyle = `rgba(60, 35, 15, ${0.12 - i * 0.02})`;
+    ctx.fillRect(i, 0, 1, FLOOR_Y);
+    ctx.fillRect(ROOM_W - 1 - i, 0, 1, FLOOR_Y);
+  }
+}
+
+// A soft shadow on the floor under furniture: [x, y, w] where y is the bottom of the item.
+function shadow(ctx, x, y, w) {
+  ctx.fillStyle = 'rgba(40, 22, 8, 0.22)';
+  ctx.fillRect(x + 2, y - 1, w - 4, 3);
+  ctx.fillRect(x, y, w, 1);
+}
+const SHADOWS = {
+  cat_tree: [3, 87, 32], sofa: [44, 86, 54], bookshelf: [124, 87, 26], lamp: [146, 86, 14],
+  decor_plant: [33, 86, 11], decor_fishbowl: [100, 87, 22], decor_beanbag: [91, 109, 23],
+  soft_bed: [19, 113, 30], cushion: [21, 112, 26], litter: [137, 106, 18], bowl: [49, 110, 12], auto_feeder: [60, 107, 10],
+};
 
 const isNight = (hour) => hour >= 19 || hour < 6;
 
@@ -52,16 +85,31 @@ function drawWall(ctx, style) {
       }
     }
   }
-  rect(ctx, 0, FLOOR_Y - 2, ROOM_W, 2, '#c9a27e');
+  drawWallTrim(ctx);
 }
 
 function drawFloor(ctx, style) {
   const f = FLOORS[style ?? 'default'];
   rect(ctx, 0, FLOOR_Y, ROOM_W, ROOM_H - FLOOR_Y, f.base);
   if (f.pattern === 'planks') {
-    for (let y = FLOOR_Y + 6, i = 0; y < ROOM_H; y += 7, i++) {
-      rect(ctx, 0, y, ROOM_W, 1, f.line);
-      for (let x = (i % 2) * 14 + 8; x < ROOM_W; x += 28) rect(ctx, x, y - 6, 1, 6, f.line);
+    // Rows of planks, each plank a slightly different shade, with seams and a little grain.
+    for (let top = FLOOR_Y, row = 0; top < ROOM_H; top += 7, row++) {
+      for (let x = -((row * 11) % 28), k = 0; x < ROOM_W; x += 28, k++) {
+        const tone = [f.base, f.light, f.dark][(row * 7 + k * 5) % 3];
+        rect(ctx, x, top, 28, 6, tone);
+        rect(ctx, x + 4 + ((row + k) % 3) * 6, top + 2 + (k % 2) * 2, 7, 1, f.dark); // grain
+        rect(ctx, x + 27, top, 1, 6, f.line);
+      }
+      rect(ctx, 0, top + 6, ROOM_W, 1, f.line);
+    }
+    if (f.shine) {
+      // Polished: a soft glow from the window, fading out to the sides.
+      const glow = ctx.createLinearGradient(20, 0, 140, 0);
+      glow.addColorStop(0, 'rgba(255, 230, 180, 0)');
+      glow.addColorStop(0.5, 'rgba(255, 230, 180, 0.16)');
+      glow.addColorStop(1, 'rgba(255, 230, 180, 0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(20, FLOOR_Y + 1, 120, 26);
     }
     if (f.worn) {
       // Scuffs and a cracked board.
@@ -91,6 +139,7 @@ function drawSky(ctx, clock, now) {
   ctx.beginPath();
   ctx.rect(x, y, w, h);
   ctx.clip();
+  drawTown(ctx, x, y + h, night);
   if (weather === 'clear') {
     if (night) {
       drawSprite(ctx, 'moon', x + 16, y + 3);
@@ -112,6 +161,21 @@ function drawSky(ctx, clock, now) {
     }
   }
   ctx.restore();
+}
+
+// Rooftops of the town seen through the window, with lit windows at night.
+function drawTown(ctx, left, bottom, night) {
+  const wall = night ? '#3c4566' : '#d8c8b4';
+  const roof = night ? '#2c3352' : '#b9806a';
+  for (const [dx, w, h] of [[-1, 9, 9], [7, 7, 6], [13, 10, 11], [22, 8, 7]]) {
+    rect(ctx, left + dx, bottom - h, w, h, wall);
+    rect(ctx, left + dx, bottom - h, w, 2, roof);
+    for (let wy = bottom - h + 3; wy < bottom - 1; wy += 3) {
+      for (let wx = left + dx + 1; wx < left + dx + w - 1; wx += 3) {
+        rect(ctx, wx, wy, 1, 1, night ? ((wx + wy) % 4 ? '#ffd27f' : '#2c3352') : '#8fa8c0');
+      }
+    }
+  }
 }
 
 function drawWindow(ctx, clock, now) {
@@ -606,10 +670,14 @@ function drawMesses(ctx, cleanliness, now) {
 function drawGardenDoor(ctx, open) {
   const [x, y, w, h] = ROOM_DOOR;
   rect(ctx, x, y, w, h, WOOD_DARK);
-  rect(ctx, x + 1, y + 1, w - 2, h - 1, open ? '#6cc04a' : WOOD);
-  rect(ctx, x + 3, y + 4, w - 6, 8, open ? '#bfe9a8' : '#9a8a70');
-  rect(ctx, x + 3, y + 8, w - 6, 1, open ? '#7ccf5a' : '#8a7a60');
-  rect(ctx, x + w - 4, y + 18, 2, 2, '#ffd84a'); // handle
+  rect(ctx, x + 1, y + 1, w - 2, h - 1, open ? '#5aa83e' : '#a86a34');
+  rect(ctx, x + 1, y + 1, 1, h - 1, open ? '#7ccf5a' : '#c0824a'); // light on the edge
+  rect(ctx, x + 3, y + 3, w - 6, 9, open ? '#bfe9a8' : '#8e5426'); // upper panel (glass once open)
+  rect(ctx, x + 3, y + 15, w - 6, 14, open ? '#4c9434' : '#8e5426'); // lower panel
+  rect(ctx, x + 3, y + 3, w - 6, 1, open ? '#e4f7d8' : '#6e4020');
+  rect(ctx, x + 3, y + 15, w - 6, 1, open ? '#3e7a2a' : '#6e4020');
+  rect(ctx, x + w - 4, y + 18, 2, 2, '#ffd84a'); // brass knob
+  rect(ctx, x + w - 4, y + 18, 1, 1, '#fff2b0');
   if (!open) {
     rect(ctx, x + w - 5, y + 21, 4, 3, '#c8a020'); // padlock
     rect(ctx, x + w - 4, y + 19, 2, 2, '#8a7a60');
@@ -634,6 +702,7 @@ export function drawRoom(ctx, state, now, clock) {
   drawFloor(ctx, state.equipped.floor);
   const cleanliness = Math.min(...state.cats.map((c) => c.stats.cleanliness));
   drawFloorDirt(ctx, cleanliness);
+  for (const [id, [x, y, w]] of Object.entries(SHADOWS)) if (has(id)) shadow(ctx, x, y, w);
   item('decor_lights', () => drawFairyLights(ctx, now, false, broken.has('decor_lights')));
 
   drawGardenDoor(ctx, has('garden_door'));

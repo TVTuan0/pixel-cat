@@ -107,6 +107,10 @@ export const SPRITES = {
     colors: { c: '#f3ead8', t: '#9fd3c7' },
     rows: ['cccctttt', 'cccctttt', 'cccctttt', 'cccctttt', 'ttttcccc', 'ttttcccc', 'ttttcccc', 'ttttcccc'],
   },
+  floor_oak: {
+    colors: { a: '#c4803f', b: '#d39150', c: '#b37036', l: '#7a4a22' },
+    rows: ['aaaalbbb', 'aaaalbbb', 'llllllll', 'cccbbbbl', 'cccbbbbl', 'llllllll', 'blaaaaaa', 'blaaaaaa'],
+  },
   floor_carpet: {
     colors: { c: '#b49ad6', s: '#9a7fc0' },
     rows: ['cccccccc', 'cscccccc', 'ccccccsc', 'cccscccc', 'cccccccc', 'csccccsc', 'cccccccc', 'ccccsccc'],

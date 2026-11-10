@@ -134,6 +134,7 @@ export default {
   item_wall_stars: 'Starry sky',
   item_floor_dark: 'Dark wood',
   item_floor_tiles: 'Tiles',
+  item_floor_oak: 'Oak floor',
   item_floor_carpet: 'Soft carpet',
   slot_wall: 'Wallpaper',
   slot_floor: 'Floor',

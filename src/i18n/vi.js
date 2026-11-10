@@ -135,6 +135,7 @@ export default {
   item_floor_dark: 'Gỗ tối',
   item_floor_tiles: 'Gạch men',
   item_floor_carpet: 'Thảm êm',
+  item_floor_oak: 'Sàn gỗ sồi',
   slot_wall: 'Giấy dán tường',
   slot_floor: 'Sàn nhà',
   use: 'Dùng',

@@ -91,6 +91,7 @@ export const SHOP_ITEMS = [
   { id: 'floor_dark', slot: 'floor', price: 20 },
   { id: 'floor_tiles', slot: 'floor', price: 25 },
   { id: 'floor_carpet', slot: 'floor', price: 25 },
+  { id: 'floor_oak', slot: 'floor', price: 35 },
 ];
 
 // Items help at most this much per stat, so cats still need care.
