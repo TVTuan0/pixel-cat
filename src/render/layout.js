@@ -2,6 +2,11 @@
 
 export const ROOM_W = 160;
 export const ROOM_H = 120;
+// The scene is drawn at RES screen pixels per room unit, so new art can use half units (0.5) for finer detail.
+// Game logic, spots and taps stay in room units.
+export const RES = 2;
+export const SCENE_W = ROOM_W * RES;
+export const SCENE_H = ROOM_H * RES;
 export const FLOOR_Y = 76; // where the wall meets the floor
 export const FLOOR_G = 110; // where the cat's feet are when it stands on the floor
 

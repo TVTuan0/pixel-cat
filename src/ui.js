@@ -2,7 +2,7 @@
 import { t } from './i18n/index.js';
 import { analyticsEnabled } from './analytics.js';
 import { spriteCanvas, brokenSpriteCanvas, FURS } from './render/sprites.js';
-import { drawScene, ROOM_W, ROOM_H } from './render/canvas.js';
+import { drawScene, ROOM_W, ROOM_H, SCENE_W, SCENE_H } from './render/canvas.js';
 import { entryToScene } from './contestRoom.js';
 import { runFishGame, drawFishGameIdle } from './minigame/fish.js';
 import { runMouseGame, drawMouseGameIdle } from './minigame/mouse.js';
@@ -427,7 +427,7 @@ function furPicker(kitten) {
 
 // The first kitten (locked sheet with a language switch), or a new kitten when `price` is given.
 export function openAdopt(previewState, { lang, onLang, onAdopt, price = null }) {
-  const preview = el('canvas', { class: 'preview', width: ROOM_W, height: ROOM_H });
+  const preview = el('canvas', { class: 'preview', width: SCENE_W, height: SCENE_H });
   const input = el('input', { type: 'text', maxlength: '16', placeholder: t('adoptPlaceholder'), 'aria-label': t('adoptPrompt'), enterkeyhint: 'done' });
   const submit = () => onAdopt(input.value.trim() || t('defaultName'));
   input.addEventListener('keydown', (e) => {
@@ -526,7 +526,7 @@ export function showMessage(title, text, art, extra = null) {
 
 // A still picture of a contest room.
 function roomCanvas(room, className) {
-  const canvas = el('canvas', { class: className, width: ROOM_W, height: ROOM_H });
+  const canvas = el('canvas', { class: className, width: SCENE_W, height: SCENE_H });
   drawScene(canvas.getContext('2d'), entryToScene(room, Date.now()), performance.now(), Date.now());
   return canvas;
 }
@@ -592,7 +592,7 @@ export function openDuel(duel, votes, { onPick, onInvite }) {
 }
 
 export function catPreview(state) {
-  const canvas = el('canvas', { class: 'preview', width: ROOM_W, height: ROOM_H });
+  const canvas = el('canvas', { class: 'preview', width: SCENE_W, height: SCENE_H });
   drawScene(canvas.getContext('2d'), state, performance.now(), Date.now());
   return canvas;
 }

@@ -1,5 +1,5 @@
 // Makes a picture card of the cat and shares it (phones) or downloads it. Also shares the game link.
-import { drawScene, ROOM_W, ROOM_H } from './render/canvas.js';
+import { drawScene, ROOM_W, ROOM_H, SCENE_W, SCENE_H } from './render/canvas.js';
 import { SITE_URL } from './config.js';
 
 const SCALE = 4;
@@ -8,8 +8,8 @@ const SITE_HOST = new URL(SITE_URL).host;
 
 export async function makeCard(state, { title, caption }) {
   const room = document.createElement('canvas');
-  room.width = ROOM_W;
-  room.height = ROOM_H;
+  room.width = SCENE_W;
+  room.height = SCENE_H;
   drawScene(room.getContext('2d'), state, performance.now(), Date.now(), { live: true, marker: false });
 
   const card = document.createElement('canvas');

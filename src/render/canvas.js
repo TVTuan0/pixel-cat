@@ -7,13 +7,13 @@ import {
 } from './garden.js';
 import { drawFrontCat, drawSideCat, FACES } from './cat.js';
 import { createWalker } from './walker.js';
-import { SPOTS, START_SPOTS, SLEEP_SPOTS, PRESENT_SPOTS, GARDEN_SPOTS, scratchPoint } from './layout.js';
+import { SPOTS, START_SPOTS, SLEEP_SPOTS, PRESENT_SPOTS, GARDEN_SPOTS, RES, scratchPoint } from './layout.js';
 import { pickBehavior } from './behavior.js';
 import { active, playEffect, stopEffect, remaining } from './effects.js';
 import { moodOf, stageOf, usableItems } from '../rules.js';
 import { SHOP_ITEMS, BREAKABLE_SLOTS } from '../config.js';
 
-export { ROOM_W, ROOM_H } from './layout.js';
+export { ROOM_W, ROOM_H, SCENE_W, SCENE_H } from './layout.js';
 
 // The two places a cat can be: which spots it walks between, the door it uses, and where cats start.
 const PLACES = {
@@ -325,6 +325,7 @@ function drawCatMarks(ctx, state, drawn, now, marker) {
 // `view` is 'room' or 'garden'.
 export function drawScene(ctx, state, now, clock = Date.now(), { live = false, marker = live, view = 'room' } = {}) {
   ctx.imageSmoothingEnabled = false;
+  ctx.setTransform(RES, 0, 0, RES, 0, 0); // the canvas is SCENE_W × SCENE_H; we draw in room units
   if (view === 'garden') drawGarden(ctx, state, now, clock);
   else {
     drawRoom(ctx, state, now, clock);

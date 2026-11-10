@@ -18,3 +18,12 @@ describe('sprites', () => {
     }
   });
 });
+
+describe('half-unit sprites', () => {
+  it('a sprite drawn in half units is half the size in room units', async () => {
+    const { spriteSize } = await import('../src/render/sprites.js');
+    SPRITES.__half = { cell: 0.5, colors: { a: '#000' }, rows: ['aaaa', 'aaaa'] };
+    expect(spriteSize('__half')).toEqual({ w: 2, h: 1 });
+    delete SPRITES.__half;
+  });
+});

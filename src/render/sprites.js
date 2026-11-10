@@ -305,20 +305,22 @@ export const SPRITES = {
 
 SPRITES.food_fish = SPRITES.fish;
 
+// A sprite's size in room units. Sprites with `cell: 0.5` are drawn at half-unit detail.
 export function spriteSize(name) {
   const s = SPRITES[name];
-  return { w: s.rows[0].length, h: s.rows.length };
+  const cell = s.cell ?? 1;
+  return { w: s.rows[0].length * cell, h: s.rows.length * cell };
 }
 
 export function drawSprite(ctx, name, x, y, flip = false) {
-  const { colors, rows } = SPRITES[name];
+  const { colors, rows, cell = 1 } = SPRITES[name];
   const w = rows[0].length;
   rows.forEach((row, ry) => {
     for (let rx = 0; rx < row.length; rx++) {
       const color = colors[row[rx]];
       if (!color) continue;
       ctx.fillStyle = color;
-      ctx.fillRect(x + (flip ? w - 1 - rx : rx), y + ry, 1, 1);
+      ctx.fillRect(x + (flip ? w - 1 - rx : rx) * cell, y + ry * cell, cell, cell);
     }
   });
 }
@@ -326,13 +328,16 @@ export function drawSprite(ctx, name, x, y, flip = false) {
 // A small canvas showing one sprite, for buttons and shop rows.
 export function spriteCanvas(name, scale = 4) {
   const { w, h } = spriteSize(name);
+  const cell = SPRITES[name].cell ?? 1;
   const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
+  canvas.width = w / cell; // one canvas pixel per sprite cell
+  canvas.height = h / cell;
   canvas.className = 'sprite-icon';
   canvas.style.width = `${w * scale}px`;
   canvas.style.height = `${h * scale}px`;
-  drawSprite(canvas.getContext('2d'), name, 0, 0);
+  const ctx = canvas.getContext('2d');
+  ctx.scale(1 / cell, 1 / cell);
+  drawSprite(ctx, name, 0, 0);
   return canvas;
 }
 
@@ -340,7 +345,8 @@ export function spriteCanvas(name, scale = 4) {
 export function brokenSpriteCanvas(name, scale = 4) {
   const canvas = spriteCanvas(name, scale);
   const ctx = canvas.getContext('2d');
-  const { w, h } = spriteSize(name);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // draw the marks in canvas pixels
+  const { width: w, height: h } = canvas;
   ctx.globalCompositeOperation = 'source-atop';
   ctx.fillStyle = 'rgba(40, 25, 20, 0.35)';
   ctx.fillRect(0, 0, w, h);
