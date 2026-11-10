@@ -200,6 +200,18 @@ describe('claimDailyGift', () => {
     for (let d = 0; d < 365; d++) seen.add(weatherOf(T0 + d * DAY));
     expect([...seen].sort()).toEqual(['clear', 'rain', 'snow']);
   });
+  it('weather changes from day to day instead of coming in long runs', () => {
+    let longest = 0;
+    let run = 0;
+    for (let d = 0; d < 365; d++) {
+      run = d > 0 && weatherOf(T0 + d * DAY) === weatherOf(T0 + (d - 1) * DAY) ? run + 1 : 1;
+      longest = Math.max(longest, run);
+    }
+    expect(longest).toBeLessThanOrEqual(10);
+    const rainy = Array.from({ length: 365 }, (_, d) => weatherOf(T0 + d * DAY)).filter((w) => w === 'rain').length;
+    expect(rainy).toBeGreaterThan(365 * 0.15); // about 25% of days
+    expect(rainy).toBeLessThan(365 * 0.35);
+  });
   it('dayKey uses the local date', () => {
     expect(dayKey(T0)).toBe('2026-11-08');
   });

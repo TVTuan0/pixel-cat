@@ -2,7 +2,7 @@
 import { drawSprite } from './sprites.js';
 import { rect, blob, line, disc } from './draw.js';
 import { active } from './effects.js';
-import { ROOM_W, ROOM_H, FLOOR_Y } from './layout.js';
+import { ROOM_W, ROOM_H, FLOOR_Y, ROOM_DOOR } from './layout.js';
 import { weatherOf, seasonOf } from '../rules.js';
 
 const WALLS = {
@@ -601,6 +601,21 @@ function drawMesses(ctx, cleanliness, now) {
   }
 }
 
+// The door to the garden in the back left corner. Locked (with a padlock) until the player buys it;
+// then its window shows the green garden outside.
+function drawGardenDoor(ctx, open) {
+  const [x, y, w, h] = ROOM_DOOR;
+  rect(ctx, x, y, w, h, WOOD_DARK);
+  rect(ctx, x + 1, y + 1, w - 2, h - 1, open ? '#6cc04a' : WOOD);
+  rect(ctx, x + 3, y + 4, w - 6, 8, open ? '#bfe9a8' : '#9a8a70');
+  rect(ctx, x + 3, y + 8, w - 6, 1, open ? '#7ccf5a' : '#8a7a60');
+  rect(ctx, x + w - 4, y + 18, 2, 2, '#ffd84a'); // handle
+  if (!open) {
+    rect(ctx, x + w - 5, y + 21, 4, 3, '#c8a020'); // padlock
+    rect(ctx, x + w - 4, y + 19, 2, 2, '#8a7a60');
+  }
+}
+
 // Everything behind the cat. Only items the player owns are in the room.
 export function drawRoom(ctx, state, now, clock) {
   const time = new Date(clock);
@@ -621,6 +636,7 @@ export function drawRoom(ctx, state, now, clock) {
   drawFloorDirt(ctx, cleanliness);
   item('decor_lights', () => drawFairyLights(ctx, now, false, broken.has('decor_lights')));
 
+  drawGardenDoor(ctx, has('garden_door'));
   drawWindow(ctx, time, now);
   drawCurtains(ctx, now);
   drawClock(ctx, time);

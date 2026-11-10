@@ -194,6 +194,19 @@ export const SPRITES = {
   anger: { colors: { r: '#e8384f' }, rows: ['rr.rr', 'r...r', '.....', 'r...r', 'rr.rr'] },
   zzz: { colors: { z: '#ffffff' }, rows: ['zzzz', '..z.', '.z..', 'zzzz'] },
   sparkle: { colors: { w: '#ffffff' }, rows: ['.w.', 'www', '.w.'] },
+  garden_door: {
+    colors: { o: '#3e5a2a', g: '#6cc04a', w: '#cfe8ff', b: '#9fd8ff', y: '#ffd84a' },
+    rows: ['.oooooo.', 'oggggggo', 'ogwwwwgo', 'ogwbbwgo', 'ogwwwwgo', 'oggggggo', 'ogggggyo', 'oggggggo', 'oggggggo', 'oooooooo'],
+  },
+  // Buttons for going between the room and the garden.
+  nav_garden: {
+    colors: { g: '#5cc96b', d: '#2e7d32', b: '#8a5a2a' },
+    rows: ['..gggg..', '.gggggg.', 'gggdgggg', 'gggggdgg', '.gggggg.', '..gggg..', '...bb...', '...bb...', '..bbbb..'],
+  },
+  nav_home: {
+    colors: { r: '#e8384f', w: '#f6e7d0', b: '#5ab0ff', k: '#8a5a2a' },
+    rows: ['....r....', '...rrr...', '..rrrrr..', '.rrrrrrr.', '.wwwwwww.', '.wbwwkkw.', '.wwwwkkw.'],
+  },
   // Things a cat brings home.
   present_leaf: { colors: { g: '#5cc96b', d: '#2e7d32' }, rows: ['....gg', '..gggg', '.ggdgg', 'ggdgg.', 'd.....'] },
   present_feather: { colors: { w: '#ffffff', g: '#b9c3d6' }, rows: ['....www', '..wwwg.', '.wwgg..', 'g......'] },

@@ -35,6 +35,8 @@ function priceTag(price) {
 
 export function initUI(handlers) {
   $('coin-icon').append(spriteCanvas('coin', 4));
+  $('view-btn').addEventListener('click', () => handlers.toggleView());
+  $('out-btn').addEventListener('click', () => handlers.toggleOutside());
   $('settings-btn').append(spriteCanvas('gear', 4));
   $('settings-btn').addEventListener('click', handlers.settings);
   $('sound-btn').addEventListener('click', handlers.sound);
@@ -112,7 +114,32 @@ function renderCatChips(state, now) {
 }
 
 // Re-labels everything for the current language and state.
+// Which place the player is looking at, for the buttons over the scene: 'room' or 'garden'.
+let navView = 'room';
+export function setNavView(view) {
+  navView = view;
+}
+
+// A button's icon and label, redrawn only when the label changes.
+function setButton(btn, icon, label) {
+  if (btn.dataset.label === label) return;
+  btn.dataset.label = label;
+  btn.replaceChildren(spriteCanvas(icon, 3), el('span', {}, label));
+}
+
+// The garden buttons: go between room and garden, and let the selected cat out or call it in.
+function renderNav(state) {
+  const hasDoor = state.owned.includes('garden_door');
+  $('view-btn').hidden = !hasDoor;
+  $('out-btn').hidden = !hasDoor || navView !== 'garden';
+  if (!hasDoor) return;
+  setButton($('view-btn'), navView === 'room' ? 'nav_garden' : 'nav_home', t(navView === 'room' ? 'toGarden' : 'toHome'));
+  const cat = selectedCat(state);
+  setButton($('out-btn'), cat.outside ? 'nav_home' : 'nav_garden', t(cat.outside ? 'callIn' : 'sendOut', { name: cat.name }));
+}
+
 export function renderHud(state, now) {
+  renderNav(state);
   document.title = t('title');
   const cat = selectedCat(state);
   $('cat-name').textContent = cat.name;
@@ -228,13 +255,13 @@ export function openFeed(state, onPick) {
 
 // What an item does for the cats, e.g. "Joy drops 15% slower", or null for looks-only items.
 function itemNote(item) {
-  if (item.slot === 'basic') return t(`need_${item.id}`);
+  if (item.slot === 'basic' || item.slot === 'garden') return t(`need_${item.id}`);
   if (!item.help) return null;
   return Object.entries(item.help).map(([stat, n]) => t('helpLine', { stat: t(stat), n })).join(', ');
 }
 
 export function openShop(state, { onBuy, onEquip, onRepair }) {
-  const slots = ['basic', 'gear', 'furniture', 'decor', 'toy', 'hat', 'collar', 'wall', 'floor'];
+  const slots = ['basic', 'gear', 'furniture', 'garden', 'decor', 'toy', 'hat', 'collar', 'wall', 'floor'];
   const keepScroll = sheet.open ? sheet.scrollTop : 0; // stay in place after buying
   const body = el('div', { class: 'list' });
   for (const slot of slots) {

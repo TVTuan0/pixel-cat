@@ -1,6 +1,6 @@
 // Moves one cat around the room: walking on the floor, jumping up to the sofa or cat tree.
 // Each cat gets its own walker.
-import { SPOTS, FLOOR_G, isHigh } from './layout.js';
+import { SPOTS, FLOOR_G } from './layout.js';
 
 const WALK_SPEED = 20; // room pixels per second
 const JUMP_SECONDS = 0.6;
@@ -14,7 +14,7 @@ const LEAP_HEIGHT = 5;
 // `from` = { x, g, base } where base is the floor x below a high perch.
 export function planPath(from, spot) {
   const legs = [];
-  if (isHigh(from.g)) legs.push({ type: 'jump', x: from.base ?? from.x, g: FLOOR_G });
+  if (from.base !== undefined) legs.push({ type: 'jump', x: from.base ?? from.x, g: FLOOR_G });
   if (spot.base !== undefined) {
     legs.push({ type: 'walk', x: spot.base, g: FLOOR_G });
     legs.push({ type: 'jump', x: spot.x, g: spot.g, base: spot.base });
@@ -25,8 +25,9 @@ export function planPath(from, spot) {
 }
 
 // A cat that starts sitting at `spotName` and rests a few seconds before wandering.
-export function createWalker(spotName, now = 0) {
-  const spot = SPOTS[spotName];
+// `spots` is the place it is in: the room (default) or the garden.
+export function createWalker(spotName, now = 0, spots = SPOTS) {
+  const spot = spots[spotName];
   const cat = {
     x: spot.x,
     g: spot.g,
@@ -61,11 +62,11 @@ export function createWalker(spotName, now = 0) {
     cat.onArrive = onArrive;
   }
 
-  const goTo = (spotName, onArrive = null) => go(spotName, SPOTS[spotName], onArrive);
+  const goTo = (spotName, onArrive = null) => go(spotName, spots[spotName], onArrive);
 
   // Crouches, wiggles, then springs forward. `dir` 1 = right. Only from the floor.
   function startPounce(now, dir) {
-    if (cat.path.length || isHigh(cat.g)) return false;
+    if (cat.path.length || cat.base !== undefined) return false; // not from up on a perch
     cat.facing = dir;
     cat.pounce = { start: now, fromX: cat.x, fromG: cat.g, dir };
     cat.spot = null;
@@ -134,7 +135,7 @@ export function createWalker(spotName, now = 0) {
   // Picks somewhere new to go after resting a while, skipping spots in `taken` (where other cats are or are going).
   function wander(owned, now, taken = []) {
     if (cat.path.length || cat.pounce || now < cat.restUntil) return;
-    const choices = Object.entries(SPOTS).filter(([name, s]) =>
+    const choices = Object.entries(spots).filter(([name, s]) =>
       name !== cat.spot && !taken.includes(name) && s.weight > 0 && (!s.needs || owned.includes(s.needs)));
     const total = choices.reduce((sum, [, s]) => sum + s.weight, 0);
     let roll = Math.random() * total;

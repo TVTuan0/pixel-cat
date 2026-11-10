@@ -70,6 +70,7 @@ export const SHOP_ITEMS = [
   { id: 'sofa', slot: 'furniture', price: 50, help: { happiness: 10 } },
   { id: 'bookshelf', slot: 'furniture', price: 35, help: { happiness: 5 } },
   { id: 'lamp', slot: 'furniture', price: 25, help: { energy: 5 } },
+  { id: 'garden_door', slot: 'garden', price: 150 }, // opens the garden
   { id: 'collar_red', slot: 'collar', price: 8 },
   { id: 'collar_blue', slot: 'collar', price: 8 },
   { id: 'collar_gold', slot: 'collar', price: 20 },
@@ -108,6 +109,14 @@ export const PRESENT_COINS = { min: 3, max: 8 };
 export const PRESENT_BOX_CHANCE = 0.1; // sometimes a gift box with an item instead of coins
 export const PRESENT_ITEMS = ['toy_mouse', 'toy_yarn', 'decor_plant']; // what a gift box can hold
 export const PRESENT_LOOKS = ['leaf', 'feather', 'sock'];
+
+// The garden, once the garden door is bought. Cats go out only in the daytime when it isn't raining or snowing.
+export const GARDEN_JOY_PER_HOUR = 5; // happiness goes up outside instead of down
+export const GARDEN_STAY_HOURS = 1; // a cat comes back in on its own after this long
+export const GARDEN_DAY = { from: 6, to: 19 }; // hours when cats may be outside
+export const GARDEN_GO_OUT_CHANCE = 0.1; // each wander check, for a cat inside
+export const GARDEN_COME_IN_CHANCE = 0.15; // each wander check, for a cat outside
+export const GARDEN_WANDER_SECONDS = 60; // how often cats may wander in or out while the game is open
 
 // The public link shown on cards and in invites (the game may also run on other sites, like itch.io).
 export const SITE_URL = 'https://pixel-cat-green.vercel.app';

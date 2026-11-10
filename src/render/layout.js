@@ -16,13 +16,25 @@ export const SPOTS = {
   yarn: { x: 92, g: 112, weight: 2, needs: 'toy_yarn' },
   front: { x: 54, g: 117, weight: 1 },
   right: { x: 124, g: 115, weight: 1 },
+  door: { x: 9, g: 84, weight: 0 }, // by the garden door, in the back left corner
+};
+
+// The garden door on the room's back wall: [x, y, w, h].
+export const ROOM_DOOR = [0, 44, 14, 32];
+
+// Spots in the garden. Cats come and go through the back door by the gate spot.
+export const GARDEN_SPOTS = {
+  gate: { x: 14, g: 94, weight: 0 },
+  lawn: { x: 50, g: 98, weight: 2 },
+  flowers: { x: 30, g: 112, weight: 2 },
+  middle: { x: 82, g: 106, weight: 2 },
+  sunny: { x: 100, g: 94, weight: 2 },
+  shade: { x: 128, g: 104, weight: 2 },
+  front: { x: 64, g: 116, weight: 1 },
 };
 
 // Where presents the cats bring home lie on the floor (top-left corner of each), by present spot number.
 export const PRESENT_SPOTS = [{ x: 8, y: 110 }, { x: 104, y: 111 }, { x: 52, y: 112 }];
-
-// A spot is "up high" when the cat must jump to reach it.
-export const isHigh = (g) => g < FLOOR_G - 15;
 
 // Where cats sit when the page opens (spots that are always there, even in an empty room),
 // and where they curl up at night, in cat order. The last five sleep spots are always there.

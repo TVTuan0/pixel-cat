@@ -3,12 +3,14 @@ import { createState, loadState, saveState, clearState } from './state.js';
 import {
   applyElapsed, feed, feedAll, pet, clean, toggleSleep, canPlay, finishMiniGame,
   buy, equip, repair, claimDailyGift, stageOf, ageInDays, recordAction, claimTask, checkStickers,
-  selectCat, selectedCat, nextCatOffer, adoptCat, rewardContestEntry, claimContestPrize, pickUpPresent,
+  selectCat, selectedCat, goOutside, comeInside, wanderOutside, nextCatOffer, adoptCat, rewardContestEntry, claimContestPrize, pickUpPresent,
 } from './rules.js';
 import { buildEntry } from './contestRoom.js';
 import { contestAvailable, getContestStatus, getDuel, sendVote, sendEntry } from './contest.js';
-import { FOODS, STICKERS, CLIP_SECONDS } from './config.js';
-import { drawScene, playEffect, playCatEffect, catAt, presentAt, stepCats, feedCat, resetCats, scratchItem } from './render/canvas.js';
+import { FOODS, STICKERS, CLIP_SECONDS, GARDEN_WANDER_SECONDS } from './config.js';
+import { ROOM_DOOR } from './render/layout.js';
+import { butterflyAt, swoop } from './render/garden.js';
+import { drawScene, playEffect, playCatEffect, catAt, presentAt, stepCats, feedCat, resetCats, scratchItem, chaseButterflies } from './render/canvas.js';
 import { spriteCanvas } from './render/sprites.js';
 import { setSoundEnabled, sfx } from './sound.js';
 import { makeCard, shareCard, shareLink, shareFile } from './snapshot.js';
@@ -16,7 +18,7 @@ import { recordClip, canRecord } from './clip.js';
 import { startAnalytics, track } from './analytics.js';
 import { startInstallSupport, installState, promptInstall } from './install.js';
 import {
-  initUI, renderHud, say, showMood, closeSheet, isSheetOpen, openFeed, openShop,
+  initUI, renderHud, setNavView, say, showMood, closeSheet, isSheetOpen, openFeed, openShop,
   openSettings, openAdopt, openGamePicker, openMiniGame, showMessage, catPreview, openTasks, openShareChoice, openContest, openDuel,
 } from './ui.js';
 
@@ -25,6 +27,7 @@ const storage = (() => {
 })();
 
 let state = loadState(storage, Date.now());
+let view = 'room'; // what the player is looking at: the room or the garden
 let previewState = null;
 let eventsRunning = false;
 const ctx = document.getElementById('room').getContext('2d');
@@ -63,6 +66,7 @@ const handlers = {
     if (!state.owned.includes('bowl')) return result(t('noBowl'), sfx.no);
     openFeed(state, (foodId, everyone) => {
       if (everyone) return feedEveryone(foodId);
+      if (selectedCat(state).outside) commit(comeInside(state, state.selected)); // dinner time: come in
       const r = feed(state, foodId);
       if (r.result === 'poor') return result(t('poor'), sfx.no);
       closeSheet();
@@ -212,9 +216,38 @@ const handlers = {
     });
   },
 
+  toggleView() {
+    if (!state.owned.includes('garden_door')) return result(t('gardenLocked'), sfx.no);
+    setView(view === 'room' ? 'garden' : 'room');
+    sfx.tap();
+  },
+
+  toggleOutside() {
+    const cat = selectedCat(state);
+    if (cat.outside) {
+      commit(comeInside(state, cat.id));
+      return result(t('cameIn', { name: cat.name }), sfx.tap);
+    }
+    const r = goOutside(state, cat.id, Date.now());
+    if (r.result !== 'ok') return result(t(`out_${r.result}`), sfx.no);
+    commit(r.state);
+    result(t('wentOut', { name: cat.name }), sfx.meow);
+  },
+
   tapRoom(x, y) {
-    const present = state && !state.asleep ? presentAt(state, x, y) : null;
-    if (present !== null) return pickUp(present);
+    if (!state) return;
+    if (view === 'garden') {
+      const b = butterflyAt(x, y);
+      if (b >= 0) {
+        swoop(b, performance.now());
+        return chaseButterflies(state);
+      }
+    } else {
+      const [dx, dy, dw, dh] = ROOM_DOOR;
+      if (x >= dx && x < dx + dw && y >= dy && y < dy + dh) return handlers.toggleView();
+      const present = !state.asleep ? presentAt(state, x, y) : null;
+      if (present !== null) return pickUp(present);
+    }
     const id = state && catAt(x, y);
     if (!id) return;
     if (id !== state.selected) commit(selectCat(state, id));
@@ -404,11 +437,26 @@ function feedEveryone(foodId) {
   if (r.result === 'poor') return result(t('poor'), sfx.no);
   closeSheet();
   if (r.result === 'full') return result(t('feedAllFull'), sfx.no);
-  commit(r.state);
+  commit(r.fed.reduce((next, id) => comeInside(next, id), r.state)); // dinner time: everyone comes in
   r.fed.forEach((id) => feedCat(id));
   result(t('feedAllOk'), sfx.eat);
   const isTreat = FOODS.find((f) => f.id === foodId).price > 0;
   record(['feed', r.fed.length], ...(isTreat ? [['treat', r.fed.length]] : []));
+}
+
+function setView(next) {
+  view = next;
+  setNavView(view);
+  renderHud(state, Date.now());
+}
+
+// Every now and then a cat wanders out to the garden or back in, while the game is open.
+let lastWander = Date.now(); // the first check comes a while after the game opens
+function wander(now) {
+  if (now - lastWander < GARDEN_WANDER_SECONDS * 1000) return;
+  lastWander = now;
+  const next = wanderOutside(state, now);
+  if (next !== state) commit(next);
 }
 
 function pickUp(index) {
@@ -433,6 +481,8 @@ function notePresents() {
 function tick() {
   if (!state) return;
   state = applyElapsed(state, Date.now());
+  wander(Date.now());
+  if (state.asleep && view === 'garden') setView('room'); // everyone is inside at bedtime
   notePresents();
   renderHud(state, Date.now());
   awardStickers();
@@ -443,7 +493,7 @@ function frame(now) {
   const shown = state ?? previewState;
   if (shown) {
     if (state) stepCats(state, now);
-    const mood = drawScene(ctx, shown, now, Date.now(), { live: Boolean(state) });
+    const mood = drawScene(ctx, shown, now, Date.now(), { live: Boolean(state), view: state ? view : 'room' });
     if (state) showMood(t(`mood_${mood}`));
   }
   requestAnimationFrame(frame);

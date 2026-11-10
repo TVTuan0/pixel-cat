@@ -7,6 +7,7 @@ import {
   GIFT_STREAK_BONUS, GIFT_STREAK_CAP, FOODS, SHOP_ITEMS, WEATHER_CHANCE,
   TASKS, TASKS_PER_DAY, STICKERS, LUNAR_DATES, MAX_CATS, NEW_CAT_PRICES, NEW_CAT_NEEDS_STAGE,
   CONTEST_ENTRY_COINS, CONTEST_PRIZES, MAX_HELP, BREAKABLE_SLOTS, ANGRY_BELOW, BREAK_EVERY_MINUTES, REPAIR_SHARE,
+  GARDEN_JOY_PER_HOUR, GARDEN_STAY_HOURS, GARDEN_DAY, GARDEN_GO_OUT_CHANCE, GARDEN_COME_IN_CHANCE,
   PRESENT_EVERY_HOURS, MAX_PRESENTS, PRESENT_COINS, PRESENT_BOX_CHANCE, PRESENT_ITEMS, PRESENT_LOOKS,
 } from './config.js';
 
@@ -39,6 +40,7 @@ export function newCat(id, name, fur, now) {
     seenStage: 'kitten',
     equipped: { hat: null, collar: null },
     nextBreakAt: null, // when an angry cat breaks its next item
+    outside: false, // playing in the garden
   };
 }
 
@@ -72,7 +74,7 @@ function angrySince(before, after, perHour, from) {
   for (const [stat, value] of Object.entries(after.stats)) {
     if (value >= ANGRY_BELOW) continue;
     const start = before.stats[stat];
-    const at = start < ANGRY_BELOW ? from : from + ((start - ANGRY_BELOW) / -perHour[stat]) * HOUR;
+    const at = start < ANGRY_BELOW ? from : Math.max(from, from + ((start - ANGRY_BELOW) / -perHour[stat]) * HOUR);
     since = since === null ? at : Math.min(since, at);
   }
   return since;
@@ -147,13 +149,62 @@ export function pickUpPresent(state, index) {
   return { state: { ...state, presents, owned, coins: state.coins + (present.coins ?? 0) }, present };
 }
 
+// ---- The garden ----
+
+// Why cats can't be outside right now, or null if they can.
+function whyNotOutside(state, time) {
+  if (!state.owned.includes('garden_door')) return 'noDoor';
+  if (state.asleep) return 'asleep';
+  const hour = new Date(time).getHours();
+  if (hour < GARDEN_DAY.from || hour >= GARDEN_DAY.to) return 'night';
+  if (weatherOf(time) !== 'clear') return 'weather';
+  return null;
+}
+
+export const canBeOutside = (state, time) => whyNotOutside(state, time) === null;
+
+// result: ok | noDoor | asleep | night | weather
+export function goOutside(state, id, time) {
+  const why = whyNotOutside(state, time);
+  if (why) return { state, result: why };
+  return { state: updateCat(state, (c) => ({ ...c, outside: true }), id), result: 'ok' };
+}
+
+export function comeInside(state, id) {
+  return updateCat(state, (c) => ({ ...c, outside: false }), id);
+}
+
+// Now and then a cat wanders out to the garden, or back in. Called every GARDEN_WANDER_SECONDS while the game is open.
+export function wanderOutside(state, time, random = Math.random) {
+  if (!canBeOutside(state, time)) return state;
+  const cats = state.cats.map((c) => {
+    if (c.outside) return random() < GARDEN_COME_IN_CHANCE ? { ...c, outside: false } : c;
+    return random() < GARDEN_GO_OUT_CHANCE ? { ...c, outside: true } : c;
+  });
+  return { ...state, cats };
+}
+
+// How much a cat's stats change over `hours`. Outside, happiness goes up, but only for the first GARDEN_STAY_HOURS:
+// after that the cat has come back in.
+function changeFor(cat, perHour, hours) {
+  const change = Object.fromEntries(Object.entries(perHour).map(([stat, c]) => [stat, c * hours]));
+  if (cat.outside) {
+    const out = Math.min(hours, GARDEN_STAY_HOURS);
+    change.happiness = GARDEN_JOY_PER_HOUR * out + perHour.happiness * (hours - out);
+  }
+  return change;
+}
+
 export function applyElapsed(state, now, random = Math.random) {
   const hours = Math.max(0, now - state.lastSeen) / HOUR;
   const perHour = changePerHour(state);
-  const cats = state.cats.map((cat) => withStats(cat, Object.fromEntries(
-    Object.entries(perHour).map(([stat, change]) => [stat, change * hours]),
-  )));
   const later = Math.max(now, state.lastSeen);
+  const allowed = canBeOutside(state, later);
+  const cats = state.cats.map((cat) => {
+    const changed = withStats(cat, changeFor(cat, perHour, hours));
+    const stillOut = cat.outside && allowed && hours < GARDEN_STAY_HOURS;
+    return cat.outside && !stillOut ? { ...changed, outside: false } : changed;
+  });
   const caughtUp = bringPresents(breakThings({ ...state, cats }, state, perHour, later, random), later, random);
   return { ...caughtUp, lastSeen: later };
 }
@@ -327,7 +378,10 @@ export function claimDailyGift(state, now) {
 function dayHash(time, salt = '') {
   let hash = 0;
   for (const ch of dayKey(time) + salt) hash = (hash * 31 + ch.charCodeAt(0)) % 1000003;
-  return hash;
+  // Scramble it, so that the next day (whose text differs by one letter) gives a very different number.
+  hash = Math.imul(hash ^ (hash >>> 16), 0x45d9f3b);
+  hash = Math.imul(hash ^ (hash >>> 16), 0x45d9f3b);
+  return (hash ^ (hash >>> 16)) >>> 0;
 }
 
 // Weather outside the window. Same for everyone on the same day.
