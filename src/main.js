@@ -9,7 +9,8 @@ import {
 import { buildEntry } from './contestRoom.js';
 import { contestAvailable, getContestStatus, getDuel, sendVote, sendEntry } from './contest.js';
 import { FOODS, SHOP_ITEMS, STICKERS, CLIP_SECONDS, GARDEN_WANDER_SECONDS } from './config.js';
-import { ROOM_DOOR } from './render/layout.js';
+import { ROOM_DOOR, ITEM_BOXES, PRESENT_SPOTS } from './render/layout.js';
+import { playFx } from './render/fx.js';
 import { butterflyAt, swoop } from './render/garden.js';
 import { drawScene, playEffect, playCatEffect, catAt, presentAt, stepCats, feedCat, resetCats, scratchItem, chaseButterflies, catHeads, takeCatEvents,
 } from './render/canvas.js';
@@ -53,6 +54,7 @@ function awardStickers() {
   if (!r.earned.length) return;
   commit(r.state);
   r.earned.forEach(() => track('sticker'));
+  playFx('confetti', 80, 110, { view });
   const coins = r.earned.reduce((sum, id) => sum + STICKERS.find((x) => x.id === id).coins, 0);
   say(t('newSticker', { names: r.earned.map((id) => t(`sticker_${id}`)).join(', '), n: coins }), 3500);
   sfx.fanfare();
@@ -111,7 +113,10 @@ const handlers = {
     playEffect('sparkle', 1200);
     const text = r.done ? t('cleanOk') : t('cleanMore');
     result(r.coins ? `${text} +${r.coins} ${t('coinsWord')}` : text, sfx.clean);
-    if (r.done) talk(state.selected, 'clean');
+    if (r.done) {
+      talk(state.selected, 'clean');
+      playFx('sparkle', 146, 104, { view: 'room' });
+    }
     record(['clean', 1]);
   },
 
@@ -272,6 +277,8 @@ const handlers = {
     playCatEffect('purr', id, 1500);
     sfx.purr();
     talk(id, 'pet');
+    const head = catHeads().get(id);
+    if (head) playFx('heart', head.x, head.y - 2, { view, seconds: 1.2 });
   },
 };
 
@@ -420,6 +427,10 @@ async function checkEvents() {
     sfx.no();
     // Each cat runs to the last thing it broke and scratches it.
     for (const n of news) scratchItem(n.catId, n.item);
+    for (const n of news) {
+      const [x, y, w, h] = ITEM_BOXES[n.item];
+      playFx('pow', x + w / 2, y + h / 2, { view: 'room' });
+    }
     for (const n of news) talk(n.catId, 'broke', 6000); // the message covers the room at first
     const lines = news.map((n) => t('brokeLine', { name: n.cat, item: t(`item_${n.item}`) })).join(' ');
     await showMessage(t('brokeTitle'), `${lines} ${t('brokeBody')}`, itemIcon(news[0].item, { broken: true, scale: 3 }));
@@ -431,6 +442,7 @@ async function checkEvents() {
     if (day === 2 || day === 7) track(`return_day${day}`);
     commit(gift.state);
     sfx.coin();
+    playFx('coins', 80, 108, { view });
     await showMessage(t('giftTitle'), t('giftBody', { n: gift.coins, s: gift.state.streak }), spriteCanvas('coin', 10));
   }
   const grown = state.cats.find((c) => stageOf(c, now) !== c.seenStage);
@@ -438,6 +450,7 @@ async function checkEvents() {
     const stage = stageOf(grown, now);
     commit({ ...state, cats: state.cats.map((c) => (c.id === grown.id ? { ...c, seenStage: stage } : c)) });
     sfx.fanfare();
+    playFx('firework', 80, 56, { view });
     await showMessage(t('grewTitle', { name: grown.name }), t('grewBody', { stage: t(`stage_${stage}`) }), catPreview(state), {
       label: t('inviteButton'),
       onClick: invite,
@@ -474,7 +487,9 @@ function wander(now) {
 }
 
 function pickUp(index) {
+  const spot = PRESENT_SPOTS[state.presents[index].spot];
   const r = pickUpPresent(state, index);
+  playFx(r.present.item ? 'chest' : 'coins', spot.x + 3, spot.y + 5, { view: 'room' });
   commit(r.state);
   seenPresents = state.presents.length;
   track('present');

@@ -2,7 +2,8 @@
 import { rect } from './draw.js';
 import { F, fineShape, rowsOf } from './fine.js';
 import { ROOM_W, ROOM_H } from './layout.js';
-import { weatherOf } from '../rules.js';
+import { weatherOf, seasonOf } from '../rules.js';
+import { ambientFx, moveFx } from './fx.js';
 import { GARDEN_DAY } from '../config.js';
 
 const GRASS_Y = 78;
@@ -213,6 +214,57 @@ export function stepButterflies(dt, now) {
   }
 }
 
+// Butterfly colors: blue (pixelfx's own), then pink and yellow.
+const BUTTERFLY_PALETTES = [
+  null,
+  ['#2a0a18', '#5a1a3a', '#a03a6a', '#e06a9a', '#ffb3c6', '#ffe0ea', '#ffffff'],
+  ['#2a1a08', '#5a3a10', '#a06a10', '#e0a020', '#ffd84a', '#fff2a0', '#ffffff'],
+];
+
+// A bird now and then flies across the sky: { x, y, dir } while it crosses, or null.
+let bird = null;
+let nextBird = 4;
+
+// Keeps the garden's moving pixelfx effects in step with the game: butterflies where the game says they are,
+// the odd bird, and the weather of the day (rain, snow, fireflies at night, autumn leaves, Tết blossoms).
+export function syncGardenFx(clock, dt) {
+  const time = new Date(clock);
+  const day = isDay(time.getHours());
+  const weather = weatherOf(clock);
+  const out = butterfliesOut(clock);
+  butterflies.forEach((b, i) => {
+    const fx = ambientFx(`butterfly${i}`, 'butterfly', out, {
+      wander: false, light: 0.5, ...(BUTTERFLY_PALETTES[i] ? { palette: BUTTERFLY_PALETTES[i] } : {}),
+    });
+    if (fx) moveFx(fx, b.x, b.y, b.tx < b.x);
+  });
+
+  nextBird -= dt;
+  if (!bird && nextBird <= 0 && day && weather === 'clear') {
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    bird = { x: dir > 0 ? -20 : ROOM_W + 20, y: 12 + Math.random() * 20, dir };
+  }
+  if (bird) {
+    bird.x += bird.dir * 28 * dt;
+    if (bird.x < -30 || bird.x > ROOM_W + 30) {
+      bird = null;
+      nextBird = 15 + Math.random() * 25;
+    }
+  }
+  const birdFx = ambientFx('bird', 'bird', Boolean(bird), { front: false });
+  if (birdFx && bird) moveFx(birdFx, bird.x, bird.y, bird.dir < 0);
+
+  // Weather sits over the lower garden: its pixelfx canvas is 180 pixels tall, anchored at the bottom.
+  const at = { x: 80, y: 118, veil: false };
+  const month = time.getMonth() + 1;
+  ambientFx('rain', 'rain', weather === 'rain', at);
+  ambientFx('snow', 'snow', weather === 'snow', at);
+  ambientFx('fireflies', 'fireflies', !day && weather === 'clear', at);
+  ambientFx('leaves', 'leaves', day && weather === 'clear' && month >= 9 && month <= 11 && seasonOf(clock) !== 'tet', at);
+  ambientFx('blossoms', 'blossoms', day && weather === 'clear' && seasonOf(clock) === 'tet', at);
+}
+
+// The old hand-drawn butterflies, kept for still pictures (live scenes use the pixelfx ones above).
 export function drawButterflies(ctx, now) {
   for (const [i, b] of butterflies.entries()) {
     const x = Math.round(b.x * 2);

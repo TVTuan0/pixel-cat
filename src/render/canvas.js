@@ -3,9 +3,10 @@
 import { CAT_SIZES, FURS, agedFur, drawSprite } from './sprites.js';
 import { drawRoom, drawDarkness } from './room.js';
 import {
-  drawGarden, drawGardenWeather, drawButterflies, stepButterflies, butterfliesOut, butterflyToChase, butterflyNear, scare,
+  drawGarden, drawGardenWeather, drawButterflies, stepButterflies, butterfliesOut, butterflyToChase, butterflyNear, scare, syncGardenFx,
 } from './garden.js';
 import { drawFrontCat, drawSideCat, FACES } from './cat.js';
+import { stepFx, drawFx, playFx } from './fx.js';
 import { createWalker } from './walker.js';
 import { SPOTS, START_SPOTS, SLEEP_SPOTS, PRESENT_SPOTS, GARDEN_SPOTS, RES, scratchPoint } from './layout.js';
 import { pickBehavior } from './behavior.js';
@@ -116,8 +117,13 @@ function walkerFor(cat, now) {
     w.leaving = true;
     w.walker.goTo(PLACES[w.where].door, () => {
       const goal = goingTo.get(cat.id);
-      if (goal === w.where) w.leaving = false; // changed its mind on the way
-      else place(cat.id, goal, PLACES[goal].door, performance.now());
+      if (goal === w.where) return (w.leaving = false); // changed its mind on the way
+      // A puff of smoke where it leaves, and where it turns up.
+      for (const where of [w.where, goal]) {
+        const door = PLACES[where].spots[PLACES[where].door];
+        playFx('poof', door.x, door.g - 4, { view: where });
+      }
+      place(cat.id, goal, PLACES[goal].door, performance.now());
     });
   }
   return w;
@@ -213,6 +219,8 @@ export function stepCats(state, now) {
   const dt = lastFrame === null ? 0 : Math.min(0.1, (now - lastFrame) / 1000);
   lastFrame = now;
   stepButterflies(dt, now);
+  syncGardenFx(Date.now(), dt);
+  stepFx(dt);
   const night = sleepSpots(state);
   state.cats.forEach((cat, i) => {
     const w = walkerFor(cat, now);
@@ -307,11 +315,6 @@ function drawCatMarks(ctx, state, drawn, now, marker) {
     if (!state.asleep && moodOf(state, cat) === 'angry') {
       drawSprite(ctx, 'anger', box.headX + box.hw - 2, box.headY - 4 - (Math.floor(now / 300) % 2));
     }
-    if (active(fx('purr', id), now)) {
-      const rise = Math.floor((now % 900) / 90);
-      drawSprite(ctx, 'heart', box.headX + box.hw, box.headY - rise);
-      drawSprite(ctx, 'heart', box.headX - 5, box.headY + 3 - rise);
-    }
     // A small arrow marks which cat the buttons are for, when there is more than one.
     if (marker && id === state.selected && state.cats.length > 1 && !state.asleep) {
       drawSprite(ctx, 'arrow', box.headX + Math.floor(box.hw / 2) - 2, box.y - 6 - (Math.floor(now / 400) % 2));
@@ -332,18 +335,20 @@ export function drawScene(ctx, state, now, clock = Date.now(), { live = false, m
     if (!state.asleep) drawPresents(ctx, state, now);
   }
 
+  if (live) drawFx(ctx, view, false);
   const order = catsIn(state, live, now, view).sort((a, b) => a.pose.g - b.pose.g);
   const drawn = order.map(({ cat, pose }) => ({ id: cat.id, box: drawCat(ctx, state, cat, pose, now, clock) }));
   if (live) boxes = drawn;
 
   if (view === 'garden') {
-    if (butterfliesOut(clock)) drawButterflies(ctx, now);
+    if (!live && butterfliesOut(clock)) drawButterflies(ctx, now);
     drawGardenWeather(ctx, state, now, clock);
   } else if (state.asleep) {
     drawDarkness(ctx, state, now, clock);
     const step = Math.floor(now / 700) % 3;
     for (const { box } of drawn) drawSprite(ctx, 'zzz', box.headX + box.hw + 1 + step, box.headY - 2 - step * 3);
   }
+  if (live) drawFx(ctx, view, true);
   drawCatMarks(ctx, state, drawn, now, marker);
   return moodOf(state);
 }
