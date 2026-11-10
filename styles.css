@@ -294,3 +294,8 @@ input[type='text'] {
 .duel-names { font-size: 20px; }
 .duel-vs { text-align: center; font-size: 26px; color: var(--muted); line-height: 1; }
 .duel-heart { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; animation: pop 0.3s steps(3); }
+
+/* Hidden test panel (only with ?test in the address). */
+.test-panel { position: fixed; left: 8px; bottom: 8px; z-index: 50; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.test-list { display: flex; flex-direction: column; gap: 4px; background: var(--shell-dark); padding: 6px; border-radius: var(--radius); }
+.test-list[hidden] { display: none; }

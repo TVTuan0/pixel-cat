@@ -177,13 +177,7 @@ const handlers = {
       onInvite: () => { closeSheet(); invite(); },
       install: installState(),
       onInstall: () => { closeSheet(); promptInstall(); },
-      onReset: () => {
-        const lang = state.lang;
-        clearState(storage);
-        state = null;
-        closeSheet();
-        startAdopt(lang);
-      },
+      onReset: resetGame,
     });
   },
 
@@ -435,6 +429,14 @@ function startAdopt(lang, fur = 'orange') {
   });
 }
 
+function resetGame() {
+  const lang = state?.lang ?? guessLanguage();
+  clearState(storage);
+  state = null;
+  closeSheet();
+  startAdopt(lang);
+}
+
 function boot() {
   startAnalytics();
   startInstallSupport();
@@ -462,6 +464,9 @@ function boot() {
     else tick();
   });
   requestAnimationFrame(frame);
+  if (new URLSearchParams(location.search).has('test')) {
+    import('./testPanel.js').then(({ startTestPanel }) => startTestPanel({ getState: () => state, setState: commit, reset: resetGame }));
+  }
 }
 
 boot();
