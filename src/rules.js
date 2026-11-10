@@ -6,7 +6,7 @@ import {
   CLEAN_COINS, PLAY_MIN_ENERGY, PLAY_ENERGY_COST, GIFT_BASE_COINS,
   GIFT_STREAK_BONUS, GIFT_STREAK_CAP, FOODS, SHOP_ITEMS, WEATHER_CHANCE,
   TASKS, TASKS_PER_DAY, STICKERS, LUNAR_DATES, MAX_CATS, NEW_CAT_PRICES, NEW_CAT_NEEDS_STAGE,
-  CONTEST_ENTRY_COINS, CONTEST_PRIZES, MAX_HELP, BREAKABLE_SLOTS, ANGRY_BELOW, BREAK_EVERY_HOURS, REPAIR_SHARE,
+  CONTEST_ENTRY_COINS, CONTEST_PRIZES, MAX_HELP, BREAKABLE_SLOTS, ANGRY_BELOW, BREAK_EVERY_MINUTES, REPAIR_SHARE,
 } from './config.js';
 
 const clamp = (v) => Math.max(0, Math.min(100, v));
@@ -77,7 +77,7 @@ function angrySince(before, after, perHour, from) {
   return since;
 }
 
-// An angry cat breaks one working item, then another every BREAK_EVERY_HOURS while it stays angry.
+// An angry cat breaks one working item, then another every BREAK_EVERY_MINUTES while it stays angry.
 function breakThings(state, before, perHour, now, random) {
   let { broken = [], news = [] } = state;
   const cats = state.cats.map((cat) => {
@@ -92,7 +92,7 @@ function breakThings(state, before, perHour, now, random) {
         broken = [...broken, item];
         news = [...news, { cat: cat.name, catId: cat.id, item }];
       }
-      next += BREAK_EVERY_HOURS * HOUR;
+      next += BREAK_EVERY_MINUTES * 60 * 1000;
     }
     return { ...cat, nextBreakAt: next };
   });

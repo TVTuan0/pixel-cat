@@ -58,7 +58,7 @@ Hats, collars, wallpaper and floors stay cosmetic (no help, never break).
 
 ### Angry cat
 - A cat is **angry** when any of its stats is **below 10**. The face/mood shows it (reuse "grumpy" look plus a small anger mark).
-- When a cat becomes angry it breaks **1 random working item** that can break (not basics, not hats/collars/wallpaper/floor). While it stays angry, it breaks **1 more every 6 hours**. Several angry cats each break things.
+- When a cat becomes angry it breaks **1 random working item** that can break (not basics, not hats/collars/wallpaper/floor). While it stays angry, it breaks **1 more every 5 minutes**. Several angry cats each break things.
 - This runs inside `applyElapsed`, so it also happens while the page is closed. The builder works out, from the stat drop rates, when each cat crossed below 10 during the away time.
 - Coming back after a break shows a message naming what was broken ("Miu scratched the sofa!").
 - A broken item: drawn with scratch marks / tilted, gives no help, cats don't use its spot.

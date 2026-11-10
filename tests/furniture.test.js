@@ -3,6 +3,8 @@ import { createState } from '../src/state.js';
 import { applyElapsed, helpFor, usableItems, selectedCat, feed, clean, repair, repairPrice } from '../src/rules.js';
 import { HOUR, DECAY_PER_HOUR, MAX_HELP } from '../src/config.js';
 
+const MINUTE = 60 * 1000;
+
 const T0 = new Date(2026, 10, 10, 10).getTime();
 const fresh = (extra = {}) => ({ ...createState('Mochi', T0, 'en'), ...extra });
 
@@ -64,7 +66,7 @@ describe('angry cats', () => {
   const first = () => 0; // always picks the first breakable item
 
   it('breaks one item when a stat drops below 10', () => {
-    const s = applyElapsed(room({ hunger: 15 }), T0 + HOUR, first);
+    const s = applyElapsed(room({ hunger: 15 }), T0 + 52 * MINUTE, first); // goes below 10 at 50 minutes
     expect(s.broken).toEqual(['cat_tree']);
     expect(s.news).toEqual([{ cat: 'Mochi', catId: 1, item: 'cat_tree' }]);
   });
@@ -76,17 +78,17 @@ describe('angry cats', () => {
     expect(selectedCat(s).nextBreakAt).toBe(null);
   });
 
-  it('keeps breaking every 6 hours while it stays angry', () => {
-    const s = applyElapsed(room({ hunger: 5 }), T0 + 13 * HOUR, first);
+  it('keeps breaking every 5 minutes while it stays angry', () => {
+    const s = applyElapsed(room({ hunger: 5 }), T0 + 13 * MINUTE, first);
     expect(s.broken).toEqual(['cat_tree', 'sofa', 'lamp']);
-    expect(selectedCat(s).nextBreakAt).toBe(T0 + 18 * HOUR);
+    expect(selectedCat(s).nextBreakAt).toBe(T0 + 15 * MINUTE);
   });
 
   it('the clock starts again after the cat calms down', () => {
-    const angry = applyElapsed(room({ hunger: 5 }), T0 + HOUR, first);
-    expect(selectedCat(angry).nextBreakAt).toBe(T0 + 6 * HOUR);
+    const angry = applyElapsed(room({ hunger: 5 }), T0 + MINUTE, first);
+    expect(selectedCat(angry).nextBreakAt).toBe(T0 + 5 * MINUTE);
     const fed = { ...angry, cats: angry.cats.map((c) => ({ ...c, stats: { ...c.stats, hunger: 80 } })) };
-    expect(selectedCat(applyElapsed(fed, T0 + 2 * HOUR, first)).nextBreakAt).toBe(null);
+    expect(selectedCat(applyElapsed(fed, T0 + 2 * MINUTE, first)).nextBreakAt).toBe(null);
   });
 
   it('never breaks basic supplies, so nothing happens when only basics are owned', () => {
