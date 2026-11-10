@@ -23,9 +23,12 @@ export const FULL_HUNGER = 95;
 
 // A stage starts at this many days since adoption.
 export const STAGES = [
-  { id: 'kitten', fromDay: 0 },
+  { id: 'newborn', fromDay: 0 }, // tiny, mostly curled up
+  { id: 'kitten', fromDay: 1 },
   { id: 'young', fromDay: 3 },
   { id: 'adult', fromDay: 7 },
+  { id: 'mature', fromDay: 21 },
+  { id: 'senior', fromDay: 60 }, // greying, slow; cats never die
 ];
 
 export const PET_COOLDOWN_MS = 5000;

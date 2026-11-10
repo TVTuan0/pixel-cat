@@ -8,11 +8,14 @@ function weightsFor(mood, cleanliness) {
   return { look: 2, itch };
 }
 
-// Returns one of: yawn, scratch, look, hop, pounce, itch.
-export function pickBehavior(mood, cleanliness, random = Math.random) {
+// Returns one of: yawn, scratch, look, hop, pounce, itch. A newborn only yawns and looks about;
+// an old cat no longer hops or pounces.
+export function pickBehavior(mood, cleanliness, random = Math.random, stage = 'adult') {
+  if (stage === 'newborn') return random() < 0.6 ? 'yawn' : 'look';
   if (mood === 'sleepy') return 'yawn';
   if (mood === 'angry') return random() < 0.7 ? 'scratch' : 'look';
-  const weights = Object.entries(weightsFor(mood, cleanliness));
+  let weights = Object.entries(weightsFor(mood, cleanliness));
+  if (stage === 'senior') weights = weights.filter(([name]) => name !== 'hop' && name !== 'pounce').concat([['yawn', 2]]);
   const total = weights.reduce((sum, [, w]) => sum + w, 0);
   let roll = random() * total;
   for (const [name, w] of weights) {

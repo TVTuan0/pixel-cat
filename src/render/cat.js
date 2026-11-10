@@ -155,7 +155,12 @@ export function drawFrontCat(ctx, { size, cx, ground, face, lying, look, bob, no
   const ey = headY + Math.round(hh * 0.42);
   const gap = Math.round(hw * 0.18) + 1;
   rect(ctx, cx - 3, ey + 2, 7, Math.min(3, headY + hh - ey - 3), C.furLight);
-  if (C.points) rect(ctx, cx - gap - 3, ey - 1, gap * 2 + 7, Math.min(6, headY + hh - ey), C.points); // dark mask
+  if (C.points) {
+    // A dark mask around the eyes and muzzle, rounded at the top.
+    const maskH = Math.min(5, headY + hh - ey - 1);
+    rect(ctx, cx - gap - 2, ey, gap * 2 + 5, maskH, C.points);
+    rect(ctx, cx - gap - 1, ey - 1, gap * 2 + 3, 1, C.points);
+  }
   rect(ctx, cx - 1, ey + 2, 3, 1, C.pink);
   rect(ctx, headX - 2, ey + 3, 3, 1, C.outline);
   rect(ctx, headX + hw - 1, ey + 3, 3, 1, C.outline);

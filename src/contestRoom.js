@@ -33,7 +33,7 @@ export function buildEntry(state, now) {
 
 // A drawable game state for an entry: happy cats of the right age, sitting in the decorated room.
 export function entryToScene(entry, now) {
-  const age = { kitten: 0, young: 3 * DAY, adult: 8 * DAY };
+  const age = Object.fromEntries(STAGES.map((s) => [s.id, s.fromDay * DAY])); // just old enough for each stage
   return {
     cats: entry.cats.map((c, i) => ({
       id: i + 1,

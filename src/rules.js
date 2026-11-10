@@ -37,7 +37,7 @@ export function newCat(id, name, fur, now) {
     adoptedAt: now,
     stats: { hunger: 80, happiness: 80, energy: 80, cleanliness: 100 },
     lastPetAt: 0,
-    seenStage: 'kitten',
+    seenStage: 'newborn',
     equipped: { hat: null, collar: null },
     nextBreakAt: null, // when an angry cat breaks its next item
     outside: false, // playing in the garden

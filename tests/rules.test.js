@@ -64,11 +64,16 @@ describe('moodOf', () => {
 describe('stageOf', () => {
   it('follows day boundaries', () => {
     const s = cat(fresh());
-    expect(stageOf(s, T0)).toBe('kitten');
+    expect(stageOf(s, T0)).toBe('newborn');
+    expect(stageOf(s, T0 + DAY - 1)).toBe('newborn');
+    expect(stageOf(s, T0 + DAY)).toBe('kitten');
     expect(stageOf(s, T0 + 3 * DAY - 1)).toBe('kitten');
     expect(stageOf(s, T0 + 3 * DAY)).toBe('young');
     expect(stageOf(s, T0 + 7 * DAY - 1)).toBe('young');
     expect(stageOf(s, T0 + 7 * DAY)).toBe('adult');
+    expect(stageOf(s, T0 + 21 * DAY)).toBe('mature');
+    expect(stageOf(s, T0 + 60 * DAY)).toBe('senior');
+    expect(stageOf(s, T0 + 999 * DAY)).toBe('senior'); // cats never die
   });
 });
 
@@ -275,7 +280,7 @@ describe('more cats', () => {
   it('time away affects every cat, and each grows at its own pace', () => {
     const s = applyElapsed(withCats(2, { newestAge: 0 }), T0 + 2 * DAY);
     expect(s.cats.every((c) => c.stats.hunger === 0)).toBe(true);
-    expect(s.cats.map((c) => stageOf(c, T0))).toEqual(['adult', 'kitten']);
+    expect(s.cats.map((c) => stageOf(c, T0))).toEqual(['mature', 'newborn']);
   });
 
   it('ignores selecting a cat that does not exist', () => {

@@ -42,6 +42,8 @@ export function createWalker(spotName, now = 0, spots = SPOTS) {
     restUntil: now + 4000,
     face: null, // which way to turn on arrival
     pounce: null, // { start, fromX, fromG, dir }
+    pace: 1, // walking speed, as a share of the usual
+    canJump: true, // newborns can't get up onto perches yet
   };
 
   // Heads to `spot` ({ x, g, base?, face? }), known by `name`.
@@ -98,13 +100,14 @@ export function createWalker(spotName, now = 0, spots = SPOTS) {
       const dist = Math.hypot(dx, dg);
       if (Math.abs(dx) > 0.5) cat.facing = Math.sign(dx);
       cat.walkTime += dt;
-      if (dist <= WALK_SPEED * dt) {
+      const speed = WALK_SPEED * cat.pace;
+      if (dist <= speed * dt) {
         cat.x = leg.x;
         cat.g = leg.g;
         cat.path.shift();
       } else {
-        cat.x += (dx / dist) * WALK_SPEED * dt;
-        cat.g += (dg / dist) * WALK_SPEED * dt;
+        cat.x += (dx / dist) * speed * dt;
+        cat.g += (dg / dist) * speed * dt;
       }
     } else {
       cat.jump ??= { fromX: cat.x, fromG: cat.g, t: 0 };
@@ -136,7 +139,8 @@ export function createWalker(spotName, now = 0, spots = SPOTS) {
   function wander(owned, now, taken = []) {
     if (cat.path.length || cat.pounce || now < cat.restUntil) return;
     const choices = Object.entries(spots).filter(([name, s]) =>
-      name !== cat.spot && !taken.includes(name) && s.weight > 0 && (!s.needs || owned.includes(s.needs)));
+      name !== cat.spot && !taken.includes(name) && s.weight > 0 && (!s.needs || owned.includes(s.needs))
+      && (cat.canJump || s.base === undefined));
     const total = choices.reduce((sum, [, s]) => sum + s.weight, 0);
     let roll = Math.random() * total;
     for (const [name, s] of choices) {
@@ -149,6 +153,11 @@ export function createWalker(spotName, now = 0, spots = SPOTS) {
     goTo,
     goToPoint: (name, point, onArrive = null) => go(name, point, onArrive),
     startPounce,
+    // How this cat gets about at its age.
+    setAge(pace, canJump) {
+      cat.pace = pace;
+      cat.canJump = canJump;
+    },
     update,
     wander,
     target: () => (cat.path.length ? cat.target : cat.spot),

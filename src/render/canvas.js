@@ -1,6 +1,6 @@
 // Draws the whole scene and drives what each cat is doing on screen.
 // Each cat is either in the room or out in the garden; the player looks at one of the two.
-import { CAT_SIZES, FURS, drawSprite } from './sprites.js';
+import { CAT_SIZES, FURS, agedFur, drawSprite } from './sprites.js';
 import { drawRoom, drawDarkness } from './room.js';
 import {
   drawGarden, drawGardenWeather, drawButterflies, stepButterflies, butterfliesOut, butterflyToChase, butterflyNear, scare,
@@ -193,10 +193,12 @@ function pickIdle(state, cat, w, now) {
   const mood = moodOf(state, cat);
   const garden = w.where === 'garden';
   // Butterflies are hard to resist.
-  if (garden && (mood === 'happy' || mood === 'okay') && butterfliesOut(Date.now()) && Math.random() < 0.5) {
+  const lively = !['newborn', 'senior'].includes(stageOf(cat, Date.now()));
+  if (garden && lively && (mood === 'happy' || mood === 'okay') && butterfliesOut(Date.now()) && Math.random() < 0.5) {
     return chaseButterfly(cat, w.walker, now);
   }
-  const pick = pickBehavior(mood, cat.stats.cleanliness);
+  const stage = stageOf(cat, Date.now());
+  const pick = pickBehavior(mood, cat.stats.cleanliness, Math.random, stage);
   if (pick === 'scratch') return garden ? playCatEffect('scratch', cat.id, SCRATCH_MS, now) : scratchSomething(state, cat);
   if (pick === 'pounce') return garden ? chaseButterfly(cat, w.walker, now) : pounce(state, cat, w.walker, now);
   const ms = { look: 1600, hop: 500, yawn: 1200, itch: ITCH_MS }[pick];
@@ -215,6 +217,8 @@ export function stepCats(state, now) {
   state.cats.forEach((cat, i) => {
     const w = walkerFor(cat, now);
     const { walker } = w;
+    const stage = stageOf(cat, Date.now());
+    walker.setAge(stage === 'senior' ? 0.6 : stage === 'newborn' ? 0.5 : 1, stage !== 'newborn');
     if (w.leaving) return walker.update(dt, now);
     if (state.asleep && w.where === 'room') {
       if (walker.target() !== night[i]) walker.goTo(night[i]);
@@ -255,9 +259,10 @@ function drawBug(ctx, x, g, now) {
 }
 
 function drawCat(ctx, state, cat, pose, now, clock) {
-  const size = CAT_SIZES[stageOf(cat, clock)];
+  const stage = stageOf(cat, clock);
+  const size = CAT_SIZES[stage];
   const face = faceFor(state, cat, now);
-  const palette = FURS[cat.fur];
+  const palette = stage === 'senior' ? agedFur(cat.fur) : FURS[cat.fur];
 
   const scratching = !state.asleep && active(fx('scratch', cat.id), now);
   if (pose.mode !== 'sit' || scratching) {
@@ -270,7 +275,7 @@ function drawCat(ctx, state, cat, pose, now, clock) {
     });
   }
 
-  const lying = state.asleep;
+  const lying = state.asleep || stage === 'newborn';
   let lift = 0;
   if (active(fx('hop', cat.id), now)) lift = Math.round(Math.sin(remaining(fx('hop', cat.id), now, 500) * Math.PI) * 4);
   if (active(fx('purr', cat.id), now)) lift = Math.floor(now / 100) % 2;

@@ -58,3 +58,22 @@ describe('where a cat stands to scratch an item', () => {
     }
   });
 });
+
+describe('what cats do at each age', () => {
+  const picks = (stage) => new Set(Array.from({ length: 100 }, (_, i) => pickBehavior('happy', 30, () => i / 100, stage)));
+
+  it('a newborn only yawns and looks around', () => {
+    expect([...picks('newborn')].sort()).toEqual(['look', 'yawn']);
+  });
+
+  it('an old cat no longer hops or pounces', () => {
+    const old = picks('senior');
+    expect(old).not.toContain('hop');
+    expect(old).not.toContain('pounce');
+    expect(old).toContain('itch');
+  });
+
+  it('cats in their prime do everything', () => {
+    expect(picks('adult')).toContain('pounce');
+  });
+});

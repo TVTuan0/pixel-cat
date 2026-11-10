@@ -12,15 +12,35 @@ export const FURS = {
   calico: { ...FACE_COLORS, outline: '#4a2c2a', fur: '#f7f4ee', furLight: '#ffffff', stripe: '#f2a65a', shade: '#e6e0d4', patch: '#3a3a48' },
   tuxedo: { ...FACE_COLORS, outline: '#101016', fur: '#2a2a34', furLight: '#ffffff', stripe: '#2a2a34', shade: '#1f1f28', eye: '#8fd65a' },
   tabby: { ...FACE_COLORS, outline: '#3a2a1c', fur: '#a8845c', furLight: '#ecdcc2', stripe: '#5a4028', shade: '#94724c', stripes: true },
-  siamese: { ...FACE_COLORS, outline: '#4a3a30', fur: '#efe2c8', furLight: '#fbf4e6', stripe: '#4a3428', shade: '#ddcdb0', points: '#4a3428', eye: '#5ab0ff' },
+  siamese: { ...FACE_COLORS, outline: '#4a3a30', fur: '#efe2c8', furLight: '#fbf4e6', stripe: '#ddcdb0', shade: '#ddcdb0', points: '#4a3428', eye: '#5ab0ff' },
 };
 
 
+// An old cat's fur, a little faded toward grey.
+const mix = (hex, toward, amount) => {
+  const a = parseInt(hex.slice(1), 16);
+  const b = parseInt(toward.slice(1), 16);
+  const ch = (n, shift) => Math.round(((n >> shift) & 255) * (1 - amount) + ((b >> shift) & 255) * amount);
+  return `#${[16, 8, 0].map((s) => ch(a, s).toString(16).padStart(2, '0')).join('')}`;
+};
+const agedCache = new Map();
+export function agedFur(fur) {
+  if (!agedCache.has(fur)) {
+    const p = { ...FURS[fur] };
+    for (const key of ['fur', 'furLight', 'shade', 'stripe', 'patch', 'points']) if (p[key]) p[key] = mix(p[key], '#d6d2ca', 0.35);
+    agedCache.set(fur, p);
+  }
+  return agedCache.get(fur);
+}
+
 // Body sizes per growth stage, in room pixels. `side` is the walking (side view) shape.
 export const CAT_SIZES = {
+  newborn: { hw: 13, hh: 10, bw: 9, bh: 6, ear: 3, side: { L: 11, H: 6, leg: 2, hw: 10, hh: 9 } },
   kitten: { hw: 15, hh: 12, bw: 11, bh: 8, ear: 4, side: { L: 14, H: 7, leg: 3, hw: 11, hh: 10 } },
   young: { hw: 17, hh: 13, bw: 15, bh: 11, ear: 4, side: { L: 19, H: 9, leg: 4, hw: 13, hh: 11 } },
   adult: { hw: 19, hh: 14, bw: 19, bh: 14, ear: 5, side: { L: 24, H: 11, leg: 4, hw: 15, hh: 12 } },
+  mature: { hw: 20, hh: 15, bw: 21, bh: 15, ear: 5, side: { L: 26, H: 12, leg: 4, hw: 16, hh: 13 } },
+  senior: { hw: 20, hh: 15, bw: 22, bh: 14, ear: 5, side: { L: 26, H: 12, leg: 4, hw: 16, hh: 13 } },
 };
 
 export const SPRITES = {

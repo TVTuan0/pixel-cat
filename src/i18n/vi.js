@@ -20,6 +20,9 @@ export default {
   share: 'Chia sẻ',
   close: 'Đóng',
 
+  stage_newborn: 'Mèo sơ sinh',
+  stage_mature: 'Mèo trưởng thành',
+  stage_senior: 'Mèo già',
   stage_kitten: 'Mèo con',
   stage_young: 'Mèo nhỡ',
   stage_adult: 'Mèo lớn',

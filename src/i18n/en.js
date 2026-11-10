@@ -20,6 +20,9 @@ export default {
   share: 'Share',
   close: 'Close',
 
+  stage_newborn: 'Newborn',
+  stage_mature: 'Grown-up',
+  stage_senior: 'Senior',
   stage_kitten: 'Kitten',
   stage_young: 'Young cat',
   stage_adult: 'Adult cat',
