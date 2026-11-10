@@ -299,3 +299,24 @@ input[type='text'] {
 .test-panel { position: fixed; left: 8px; bottom: 8px; z-index: 50; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .test-list { display: flex; flex-direction: column; gap: 4px; background: var(--shell-dark); padding: 6px; border-radius: var(--radius); }
 .test-list[hidden] { display: none; }
+
+/* Computers and other wide screens: a big room on the left, everything else in a column on the right. */
+@media (min-width: 900px) and (min-aspect-ratio: 5/4) {
+  #app {
+    max-width: none;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas: "stage top" "stage stats" "stage cats" "stage actions";
+    gap: 12px 20px;
+    padding: 20px;
+  }
+  .topbar { grid-area: top; }
+  .age { white-space: normal; }
+  .stats { grid-area: stats; grid-template-columns: 1fr; }
+  .cats { grid-area: cats; flex-wrap: wrap; }
+  .stage { grid-area: stage; }
+  .actions { grid-area: actions; align-self: end; grid-template-columns: repeat(2, 1fr); }
+  /* As big as fits: full width, or full height at the room's 4:3 shape. */
+  .screen { width: min(100%, calc((100dvh - 48px) * 4 / 3)); }
+}
