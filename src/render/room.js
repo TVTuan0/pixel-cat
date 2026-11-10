@@ -42,7 +42,7 @@ const SHADOWS = {
 
 const isNight = (hour) => hour >= 19 || hour < 6;
 
-function drawWall(ctx, style) {
+export function drawWall(ctx, style) {
   const w = WALLS[style ?? 'default'];
   rect(ctx, 0, 0, ROOM_W, FLOOR_Y, w.base);
   if (w.pattern === 'old') {
@@ -73,7 +73,7 @@ function drawWall(ctx, style) {
   drawWallTrim(ctx, FLOOR_Y);
 }
 
-function drawFloor(ctx, style) {
+export function drawFloor(ctx, style) {
   const f = FLOORS[style ?? 'default'];
   rect(ctx, 0, FLOOR_Y, ROOM_W, ROOM_H - FLOOR_Y, f.base);
   if (f.pattern === 'planks') {
@@ -175,7 +175,7 @@ function drawLampGlow(ctx) {
 }
 
 // `broken`: the right half has come down and hangs off the wall, its bulbs dark.
-function drawFairyLights(ctx, now, glow, broken = false) {
+export function drawFairyLights(ctx, now, glow, broken = false) {
   const colors = ['#ff5a6e', '#ffd84a', '#5ab0ff', '#5cc96b'];
   const wireY = (x) => (broken && x > 80 ? 8 + Math.round((x - 80) * 0.9) : 3 + Math.round(Math.abs(Math.sin((x / 40) * Math.PI)) * 4));
   const end = broken ? 124 : ROOM_W;

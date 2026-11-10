@@ -14,6 +14,7 @@ import { butterflyAt, swoop } from './render/garden.js';
 import { drawScene, playEffect, playCatEffect, catAt, presentAt, stepCats, feedCat, resetCats, scratchItem, chaseButterflies, catHeads, takeCatEvents,
 } from './render/canvas.js';
 import { spriteCanvas } from './render/sprites.js';
+import { itemIcon } from './render/icons.js';
 import { setSoundEnabled, sfx } from './sound.js';
 import { makeCard, shareCard, shareLink, shareFile } from './snapshot.js';
 import { recordClip, canRecord } from './clip.js';
@@ -421,7 +422,7 @@ async function checkEvents() {
     for (const n of news) scratchItem(n.catId, n.item);
     for (const n of news) talk(n.catId, 'broke', 6000); // the message covers the room at first
     const lines = news.map((n) => t('brokeLine', { name: n.cat, item: t(`item_${n.item}`) })).join(' ');
-    await showMessage(t('brokeTitle'), `${lines} ${t('brokeBody')}`, spriteCanvas(news[0].item, 6));
+    await showMessage(t('brokeTitle'), `${lines} ${t('brokeBody')}`, itemIcon(news[0].item, { broken: true, scale: 3 }));
   }
   const gift = claimDailyGift(state, now);
   if (gift.coins) {
