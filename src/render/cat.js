@@ -1,23 +1,16 @@
 // Draws the cat: front view when sitting or sleeping, side view when walking or jumping.
+// Cats are drawn at double resolution: every number below is in fine pixels (half a room unit),
+// while the functions take and return room units like the rest of the game.
 import { FURS, drawSprite } from './sprites.js';
-import { rect, blob } from './draw.js';
 
-// Colors of the cat being drawn right now; set at the start of each draw call.
+// Colors of the cat being drawn right now, and the context; set at the start of each draw call.
 let C = FURS.orange;
+let ctx = null;
 
-// Dark spots for a calico; other furs have none.
-function patch(ctx, x, y, w, h) {
-  if (C.patch) rect(ctx, x, y, w, h, C.patch);
-}
-
-// The dark face, ears, paws and tail of a Siamese; other furs use their normal color.
-const pointsOr = (color) => C.points ?? color;
-
-// A soft shadow on the ground under a cat.
-function groundShadow(ctx, cx, ground, w) {
-  ctx.fillStyle = 'rgba(30, 18, 8, 0.25)';
-  ctx.fillRect(Math.round(cx - w / 2) + 1, ground - 1, w - 2, 2);
-  ctx.fillRect(Math.round(cx - w / 2) + 3, ground + 1, w - 6, 1);
+// One fine pixel block: x, y, w, h in fine pixels.
+function P(x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x / 2, y / 2, w / 2, h / 2);
 }
 
 export const FACES = {
@@ -33,266 +26,386 @@ export const FACES = {
 
 const COLLAR_COLORS = { collar_red: '#e8384f', collar_blue: '#3a7bff', collar_gold: '#8b4513' };
 
-function drawTail(ctx, baseX, baseY, points) {
-  for (const [dx, dy] of points) rect(ctx, baseX + dx - 1, baseY + dy - 1, 3, 3, C.outline);
-  points.forEach(([dx, dy], i) => rect(ctx, baseX + dx, baseY + dy, 1, 1, pointsOr(i === points.length - 1 ? C.stripe : C.fur)));
+// The dark face, ears, paws and tail of a Siamese; other furs use their normal color.
+const pointsOr = (color) => C.points ?? color;
+// Whiskers show light on dark cats and dark on light ones.
+const whiskerColor = () => (['#2a2a34', '#3a3a48'].includes(C.fur) ? '#d8d8e4' : C.outline);
+
+// The rows of a rounded shape (a "squircle"): [left, right, y] per row, in fine pixels.
+function rowsOf(x, y, w, h, round = 3) {
+  const rows = [];
+  for (let r = 0; r < h; r++) {
+    const t = (r + 0.5 - h / 2) / (h / 2);
+    const half = (w / 2) * Math.pow(1 - Math.pow(Math.abs(t), round), 1 / round);
+    rows.push([Math.round(x + w / 2 - half), Math.round(x + w / 2 + half), y + r]);
+  }
+  return rows;
 }
 
-function drawEars(ctx, headX, headY, hw, ear) {
-  for (let i = 0; i < ear; i++) {
-    const w = i + 2;
-    const y = headY - ear + 1 + i;
-    for (const x of [headX + 1, headX + hw - 1 - w]) {
-      rect(ctx, x, y, w, 1, C.outline);
-      if (i > 0) rect(ctx, x + 1, y, w - 2, 1, pointsOr(C.fur));
-      if (i > 1) rect(ctx, x + 2 - (x > headX + 1 ? 1 : 0), y, Math.max(0, w - 4), 1, C.pink);
+// A rounded shape with a thin outline. `inside` draws shading and markings, clipped to the shape.
+function shape(x, y, w, h, fill, { round = 3, inside = null } = {}) {
+  for (const [l, r, row] of rowsOf(x, y, w, h, round)) P(l, row, r - l, 1, C.outline);
+  const inner = rowsOf(x + 1, y + 1, w - 2, h - 2, round);
+  for (const [l, r, row] of inner) P(l, row, r - l, 1, fill);
+  if (!inside) return;
+  ctx.save();
+  ctx.beginPath();
+  for (const [l, r, row] of inner) ctx.rect(l / 2, row / 2, (r - l) / 2, 0.5);
+  ctx.clip();
+  inside();
+  ctx.restore();
+}
+
+// A thick line through `points` (fine pixels): an outline 2 wider than the fill.
+function thickLine(points, width, fill) {
+  for (const [x, y] of points) P(x - 1, y - 1, width + 2, width + 2, C.outline);
+  for (const [x, y] of points) P(x, y, width, width, fill);
+}
+
+// A pointed ear. `x` is its left edge at the base, `base` the y of the base; `outward` -1 tips it left, 1 right.
+function ear(x, base, w, h, outward, inner = true) {
+  for (let i = 0; i < h; i++) {
+    const rowW = Math.max(1, Math.round((w * (i + 1)) / h));
+    const left = outward < 0 ? x : x + w - rowW;
+    const y = base - h + i;
+    P(left, y, rowW, 1, C.outline);
+    if (rowW > 2) P(left + 1, y, rowW - 2, 1, pointsOr(C.fur));
+    if (inner && rowW > 5 && i > 2) P(left + 2, y, rowW - 4, 1, C.pink);
+  }
+}
+
+function groundShadow(cx, ground, w) {
+  ctx.fillStyle = 'rgba(30, 18, 8, 0.25)';
+  ctx.fillRect((cx - w / 2 + 2) / 2, (ground - 2) / 2, (w - 4) / 2, 1.5);
+  ctx.fillRect((cx - w / 2 + 6) / 2, (ground - 0.5) / 2, (w - 12) / 2, 1);
+}
+
+// Eyes, `w` fine pixels wide. Colored eyes (yellow, green, blue) get a dark slit pupil.
+function drawEye(x, y, w, kind, lookX = 0) {
+  const h = w + 1;
+  if (kind === 'open') {
+    if (C.eye === '#2a1d1d') {
+      P(x, y, w, h, C.eye); // dark eyes: one shiny bead
+    } else {
+      P(x, y, w, h, C.eye); // colored eyes: iris with a dark pupil
+      P(x + Math.floor((w - 1) / 2) + lookX, y, w > 3 ? 2 : 1, h, '#1a1210'); // a slit, top to bottom
+    }
+    P(x + lookX, y, 1, 1, C.white);
+    if (w > 3) P(x + w - 1 + lookX, y + h - 2, 1, 1, 'rgba(255,255,255,0.5)');
+  } else if (kind === 'happy') {
+    P(x, y + 2, 1, 2, C.outline);
+    P(x + 1, y + 1, w - 2, 1, C.outline);
+    P(x + w - 1, y + 2, 1, 2, C.outline);
+  } else if (kind === 'sleepy') {
+    P(x, y + 2, w, 1, C.outline);
+    P(x, y + 3, w, 2, C.eye);
+    P(x + 1, y + 3, 1, 1, C.white);
+  } else if (kind === 'grumpy') {
+    P(x, y + 2, w, 1, C.outline);
+    P(x, y + 3, w, 2, C.eye);
+  } else {
+    P(x, y + 3, 1, 1, C.outline); // closed: a little curve
+    P(x + 1, y + 4, w - 2, 1, C.outline);
+    P(x + w - 1, y + 3, 1, 1, C.outline);
+  }
+}
+
+function drawMouth(cx, y, kind) {
+  if (kind === 'w') {
+    P(cx - 3, y, 1, 1, C.outline);
+    P(cx - 2, y + 1, 2, 1, C.outline);
+    P(cx, y, 1, 1, C.outline);
+    P(cx + 1, y + 1, 2, 1, C.outline);
+    P(cx + 3, y, 1, 1, C.outline);
+  } else if (kind === 'open') {
+    P(cx - 2, y, 5, 4, C.outline);
+    P(cx - 1, y + 2, 3, 2, C.pink);
+  } else if (kind === 'frown') {
+    P(cx - 2, y, 5, 1, C.outline);
+    P(cx - 3, y + 1, 1, 1, C.outline);
+    P(cx + 3, y + 1, 1, 1, C.outline);
+  } else {
+    P(cx, y, 1, 1, C.outline);
+  }
+}
+
+// Hats are sprites in room units, placed from the head box.
+function drawHat(hat, headX, headY, hw) {
+  const x = headX / 2, y = headY / 2, w = hw / 2;
+  const mid = x + Math.floor(w / 2);
+  if (hat === 'hat_bow') drawSprite(ctx, 'hat_bow', x + w - 8, y - 3);
+  if (hat === 'hat_party') drawSprite(ctx, 'hat_party', mid - 3, y - 6);
+  if (hat === 'hat_crown') drawSprite(ctx, 'hat_crown', mid - 4, y - 4);
+}
+
+function drawCollar(collar, x, y, w) {
+  if (!collar) return;
+  P(x, y, w, 3, COLLAR_COLORS[collar]);
+  P(x, y + 2, w, 1, 'rgba(0,0,0,0.25)');
+  const mid = x + Math.floor(w / 2) - 1;
+  P(mid, y + 2, 3, 3, collar === 'collar_gold' ? '#ffcf3a' : '#ffd84a'); // tag
+  P(mid + 1, y + 3, 1, 1, '#fff4c0');
+}
+
+// Tabby stripes and calico patches, drawn inside a body shape.
+function bodyMarkings(x, y, w, h) {
+  if (C.stripes) {
+    for (let i = 0; i < 4; i++) {
+      P(x + 2, y + 5 + i * 5, 4, 1, C.stripe);
+      P(x + 2, y + 6 + i * 5, 2, 1, C.stripe);
+      P(x + w - 6, y + 5 + i * 5, 4, 1, C.stripe);
+      P(x + w - 4, y + 6 + i * 5, 2, 1, C.stripe);
     }
   }
-}
-
-function drawEye(ctx, ex, ey, kind) {
-  if (kind === 'open') {
-    rect(ctx, ex, ey, 2, 2, C.eye);
-    rect(ctx, ex, ey, 1, 1, C.white);
-  } else if (kind === 'happy') {
-    rect(ctx, ex, ey, 2, 1, C.eye);
-    rect(ctx, ex - 1, ey + 1, 1, 1, C.eye);
-    rect(ctx, ex + 2, ey + 1, 1, 1, C.eye);
-  } else if (kind === 'sleepy') {
-    rect(ctx, ex, ey, 2, 1, C.stripe);
-    rect(ctx, ex, ey + 1, 2, 1, C.eye);
-  } else {
-    rect(ctx, ex, ey + 1, 2, 1, C.eye); // closed or grumpy
+  if (C.patch) {
+    P(x + 1, y + 4, 7, 6, C.patch);
+    P(x + w - 9, y + h - 9, 8, 5, C.stripe);
   }
-}
-
-function drawMouth(ctx, cx, y, kind) {
-  if (kind === 'w') {
-    rect(ctx, cx - 2, y, 1, 1, C.outline);
-    rect(ctx, cx - 1, y + 1, 1, 1, C.outline);
-    rect(ctx, cx, y, 1, 1, C.outline);
-    rect(ctx, cx + 1, y + 1, 1, 1, C.outline);
-    rect(ctx, cx + 2, y, 1, 1, C.outline);
-  } else if (kind === 'open') {
-    rect(ctx, cx - 1, y, 3, 2, C.outline);
-    rect(ctx, cx, y + 1, 1, 1, C.pink);
-  } else if (kind === 'frown') {
-    rect(ctx, cx - 1, y, 3, 1, C.outline);
-    rect(ctx, cx - 2, y + 1, 1, 1, C.outline);
-    rect(ctx, cx + 2, y + 1, 1, 1, C.outline);
-  } else {
-    rect(ctx, cx, y, 1, 1, C.outline);
-  }
-}
-
-function drawHat(ctx, hat, headX, headY, hw) {
-  const mid = headX + Math.floor(hw / 2);
-  if (hat === 'hat_bow') drawSprite(ctx, 'hat_bow', headX + hw - 8, headY - 3);
-  if (hat === 'hat_party') drawSprite(ctx, 'hat_party', mid - 3, headY - 6);
-  if (hat === 'hat_crown') drawSprite(ctx, 'hat_crown', mid - 4, headY - 4);
 }
 
 // A back leg reaching up the left side to scratch behind the ear. `up` 0 or 1 moves the paw.
-function drawItchPaw(ctx, bodyLeft, ground, headX, headY, up) {
-  const pawX = headX - 4;
-  const pawY = headY + 1 - up * 2;
-  const steps = [];
-  for (let y = ground - 3, x = bodyLeft + 1; y > pawY + 3; y -= 2) steps.push([x, y]), (x = Math.max(pawX + 2, x - 1));
-  for (const [x, y] of steps) rect(ctx, x - 1, y - 1, 3, 3, C.outline);
-  for (const [x, y] of steps) rect(ctx, x, y, 1, 1, C.fur);
-  blob(ctx, pawX, pawY, 5, 5, C.fur, C.outline);
-  rect(ctx, pawX + 1, pawY + 1, 3, 1, C.furLight);
-  rect(ctx, pawX + 1, pawY - 1, 1, 1, C.outline); // toes
-  rect(ctx, pawX + 3, pawY - 1, 1, 1, C.outline);
+function drawItchPaw(bodyLeft, ground, headX, headY, up) {
+  const pawX = headX - 8;
+  const pawY = headY + 2 - up * 4;
+  const points = [];
+  for (let y = ground - 6, x = bodyLeft + 2; y > pawY + 6; y -= 2, x = Math.max(pawX + 4, x - 1)) points.push([x, y]);
+  thickLine(points, 3, C.fur);
+  shape(pawX, pawY, 9, 8, pointsOr(C.furLight), { round: 2 });
+  P(pawX + 3, pawY, 1, 2, C.outline); // toes
+  P(pawX + 5, pawY, 1, 2, C.outline);
 }
 
-// Front view. `lying` draws the curled-up sleeping shape. `itch` (0/1, or null) scratches an ear.
-// Returns the head box for hearts/Zzz.
-export function drawFrontCat(ctx, { size, cx, ground, face, lying, look, bob, now, equipped, palette, itch = null }) {
+// Front view. `lying` draws the curled-up shape (sleeping, or a newborn). `itch` (0/1, or null) scratches an ear.
+// Takes and returns room units; the returned box is used for taps, hearts and speech bubbles.
+export function drawFrontCat(context, { size, cx: cxUnits, ground: groundUnits, face, lying, look, bob, now, equipped, palette, itch = null }) {
+  ctx = context;
   C = palette;
-  const { hw, hh, ear } = size;
-  const bw = lying ? size.bw + 6 : size.bw;
-  const bh = lying ? size.bh - 3 : size.bh;
-  const bodyX = cx - Math.floor(bw / 2);
+  const cx = Math.round(cxUnits * 2);
+  const ground = Math.round(groundUnits * 2);
+  const hw = size.hw * 2, hh = size.hh * 2, earH = size.ear * 2;
+  const bw = (lying ? size.bw + 7 : size.bw) * 2;
+  const bh = (lying ? size.bh - 3 : size.bh) * 2;
+  const bodyX = cx - bw / 2;
   const bodyY = ground - bh;
-  const headX = cx - Math.floor(hw / 2);
-  const headY = lying ? bodyY - hh + 6 + bob : bodyY - hh + 3 + bob;
+  const headX = lying ? cx - hw / 2 - Math.round(bw * 0.12) : cx - hw / 2;
+  const headY = lying ? bodyY - hh + 12 + bob * 2 : bodyY - hh + 6 + bob * 2;
 
-  groundShadow(ctx, cx, ground, bw + 6);
-  const sway = lying ? 0 : [0, 1, 1, 0, -1, -1][Math.floor(now / 250) % 6];
-  const tail = lying
-    ? [[1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, -1]]
-    : [[1, 0], [2, 0], [3, -1], [3, -2], [4 + sway, -3], [4 + sway, -4], [4 + sway, -5], [3 + sway, -6]];
-  drawTail(ctx, bodyX + bw - 1, ground - 3, tail);
+  groundShadow(cx, ground, bw + 10);
 
-  blob(ctx, bodyX, bodyY, bw, bh, C.fur, C.outline);
-  rect(ctx, bodyX + bw - 3, bodyY + 2, 2, Math.max(1, bh - 3), C.shade); // shade on the far side
-  rect(ctx, bodyX + 1, bodyY + bh - 2, bw - 2, 1, C.shade);
-  if (C.stripes) {
-    for (let i = 0; i < 3 && bodyY + 3 + i * 3 < ground - 2; i++) {
-      rect(ctx, bodyX + 1, bodyY + 3 + i * 3, 2, 1, C.stripe);
-      rect(ctx, bodyX + bw - 3, bodyY + 3 + i * 3, 2, 1, C.stripe);
+  // Tail behind the body: up and swaying when sitting, wrapped around the front when lying.
+  const sway = lying ? 0 : [0, 1, 2, 1, 0, -1, -2, -1][Math.floor(now / 160) % 8];
+  const tail = [];
+  if (lying) for (let i = 0; i < 12; i++) tail.push([bodyX + bw - 6 - i * 2, ground - 5 + Math.round(Math.sin(i / 4))]);
+  else for (let i = 0; i < 14; i++) tail.push([bodyX + bw - 4 + Math.min(i, 6) + Math.round((i / 14) * sway), ground - 6 - Math.max(0, i - 3) * 2]);
+  thickLine(tail, 3, pointsOr(C.fur));
+  if (!C.points) P(tail[tail.length - 1][0], tail[tail.length - 1][1], 3, 3, C.stripe); // tip
+
+  shape(bodyX, bodyY, bw, bh, C.fur, {
+    round: 2.6,
+    inside: () => {
+      P(bodyX + bw - 7, bodyY, 6, bh, C.shade); // far side in shade
+      P(bodyX, bodyY + bh - 4, bw, 4, C.shade);
+      bodyMarkings(bodyX, bodyY, bw, bh);
+    },
+  });
+  // Chest and belly.
+  shape(cx - Math.round(bw * 0.24), bodyY + 3, Math.round(bw * 0.48), bh - 6, C.furLight, { round: 2.2 });
+  if (!lying) {
+    for (const px of [cx - 9, cx + 2]) {
+      shape(px, ground - 6, 8, 6, pointsOr(C.furLight), { round: 2 });
+      P(px + 3, ground - 4, 1, 3, C.outline); // toes
+      P(px + 5, ground - 4, 1, 3, C.outline);
     }
   }
-  const belly = Math.floor(bw / 4);
-  rect(ctx, cx - belly, bodyY + 2, belly * 2 + 1, Math.max(1, bh - 4), C.furLight);
-  patch(ctx, bodyX + 1, bodyY + 2, 2, 3);
-  if (!lying) {
-    rect(ctx, cx - 4, ground - 3, 3, 2, pointsOr(C.furLight));
-    rect(ctx, cx + 2, ground - 3, 3, 2, pointsOr(C.furLight));
-    rect(ctx, cx - 2, ground - 3, 1, 2, C.outline);
-    rect(ctx, cx + 1, ground - 3, 1, 2, C.outline);
-  }
 
-  blob(ctx, headX, headY, hw, hh, C.fur, C.outline);
-  rect(ctx, headX + hw - 3, headY + 3, 1, Math.max(1, hh - 6), C.shade);
-  patch(ctx, headX + hw - 5, headY + 1, 3, 3);
-  drawEars(ctx, headX, headY, hw, ear);
-  rect(ctx, cx - 2, headY + 1, 1, 2, C.stripe);
-  rect(ctx, cx, headY + 1, 1, 3, C.stripe);
-  rect(ctx, cx + 2, headY + 1, 1, 2, C.stripe);
+  // Ears go behind the head.
+  const earW = Math.round(hw * 0.38);
+  ear(headX + 2, headY + 4, earW, earH + 3, -1);
+  ear(headX + hw - 2 - earW, headY + 4, earW, earH + 3, 1);
 
   const ey = headY + Math.round(hh * 0.42);
-  const gap = Math.round(hw * 0.18) + 1;
-  rect(ctx, cx - 3, ey + 2, 7, Math.min(3, headY + hh - ey - 3), C.furLight);
-  if (C.points) {
-    // A dark mask around the eyes and muzzle, rounded at the top.
-    const maskH = Math.min(5, headY + hh - ey - 1);
-    rect(ctx, cx - gap - 2, ey, gap * 2 + 5, maskH, C.points);
-    rect(ctx, cx - gap - 1, ey - 1, gap * 2 + 3, 1, C.points);
-  }
-  rect(ctx, cx - 1, ey + 2, 3, 1, C.pink);
-  rect(ctx, headX - 2, ey + 3, 3, 1, C.outline);
-  rect(ctx, headX + hw - 1, ey + 3, 3, 1, C.outline);
+  const eyeW = hw >= 34 ? 4 : 3;
+  const gap = Math.round(hw * 0.17) + 1;
+  shape(headX, headY, hw, hh, C.fur, {
+    round: 2.4,
+    inside: () => {
+      P(headX + hw - 5, headY, 4, hh, C.shade);
+      P(headX + 3, headY + 2, 5, 1, 'rgba(255,255,255,0.18)'); // light on the crown
+      if (C.stripes) {
+        P(cx - 4, headY + 2, 1, 5, C.stripe);
+        P(cx, headY + 1, 1, 7, C.stripe);
+        P(cx + 4, headY + 2, 1, 5, C.stripe);
+        P(headX + 1, ey + 2, 4, 1, C.stripe);
+        P(headX + hw - 5, ey + 2, 4, 1, C.stripe);
+      }
+      if (C.patch) P(headX + hw - 11, headY + 1, 9, 8, C.patch);
+      if (C.points) shape(cx - gap - eyeW - 4, ey - 3, (gap + eyeW + 4) * 2, hh - (ey - headY) + 6, C.points, { round: 2 });
+    },
+  });
 
-  const shift = face.eyes === 'open' ? look : 0;
-  drawEye(ctx, cx - gap - 1 + shift, ey, face.eyes);
-  drawEye(ctx, cx + gap + shift, ey, face.eyes);
+  // Muzzle, nose, whiskers, eyes, mouth.
+  const muzzleY = ey + eyeW;
+  if (!C.points) shape(cx - 6, muzzleY - 1, 13, 8, C.furLight, { round: 2 });
+  P(cx - 2, muzzleY, 5, 2, C.pink);
+  P(cx - 1, muzzleY + 2, 3, 1, C.pink);
+  const whisker = whiskerColor();
+  for (const dy of [0, 3, 5]) {
+    P(headX - 4, muzzleY + dy, 8, 1, whisker);
+    P(headX + hw - 4, muzzleY + dy, 8, 1, whisker);
+  }
+  const lookX = face.eyes === 'open' ? look : 0;
+  drawEye(cx - gap - eyeW, ey, eyeW, face.eyes, lookX);
+  drawEye(cx + gap + 1, ey, eyeW, face.eyes, lookX);
   if (face.eyes === 'grumpy') {
-    const l = cx - gap - 1, r = cx + gap;
-    rect(ctx, l - 1, ey - 2, 1, 1, C.outline);
-    rect(ctx, l, ey - 1, 2, 1, C.outline);
-    rect(ctx, r + 2, ey - 2, 1, 1, C.outline);
-    rect(ctx, r, ey - 1, 2, 1, C.outline);
+    P(cx - gap - eyeW - 1, ey - 1, 2, 1, C.outline);
+    P(cx - gap - eyeW + 1, ey, eyeW - 1, 1, C.outline);
+    P(cx + gap + eyeW, ey - 1, 2, 1, C.outline);
+    P(cx + gap + 1, ey, eyeW - 1, 1, C.outline);
   }
-  drawMouth(ctx, cx, ey + 3, face.mouth);
+  drawMouth(cx, muzzleY + 4, face.mouth);
   if (face.blush) {
-    rect(ctx, cx - gap - 3, ey + 2, 2, 1, C.blush);
-    rect(ctx, cx + gap + 2, ey + 2, 2, 1, C.blush);
+    ctx.fillStyle = 'rgba(255, 140, 160, 0.55)';
+    ctx.fillRect((cx - gap - eyeW - 4) / 2, (muzzleY + 1) / 2, 2, 1);
+    ctx.fillRect((cx + gap + eyeW + 1) / 2, (muzzleY + 1) / 2, 2, 1);
   }
 
-  if (equipped.collar) {
-    rect(ctx, cx - 4, headY + hh - 1, 9, 2, COLLAR_COLORS[equipped.collar]);
-    if (equipped.collar === 'collar_gold') rect(ctx, cx - 1, headY + hh, 3, 2, '#ffcf3a');
-  }
-  drawHat(ctx, equipped.hat, headX, headY, hw);
-  if (itch !== null && !lying) drawItchPaw(ctx, bodyX, ground, headX, headY, itch);
+  drawCollar(equipped.collar, cx - Math.round(hw * 0.28), headY + hh - 3, Math.round(hw * 0.56));
+  drawHat(equipped.hat, headX, headY, hw);
+  if (itch !== null && !lying) drawItchPaw(bodyX, ground, headX, headY, itch);
 
-  return { x: Math.min(headX, bodyX) - 1, y: headY - ear, w: Math.max(hw, bw) + 2, h: ground - headY + ear, headX, headY, hw };
+  const left = Math.min(headX, bodyX);
+  return {
+    x: left / 2 - 1, y: (headY - earH) / 2, w: Math.max(hw, bw) / 2 + 2, h: (ground - headY + earH) / 2,
+    headX: headX / 2, headY: headY / 2, hw: hw / 2,
+  };
 }
 
 // Claw marks in front of a scratching cat, flickering with each swipe.
-function drawClawMarks(ctx, x, y, swipe) {
-  for (let m = 0; m < 3; m++) {
-    for (let i = 0; i < 3; i++) rect(ctx, x + m * 2 + (i === 2 ? 1 : 0), y + i + swipe, 1, 1, '#5a3a1e');
-  }
+function drawClawMarks(x, y, swipe) {
+  for (let m = 0; m < 3; m++) for (let i = 0; i < 6; i++) P(x + m * 3 + Math.floor(i / 2), y + i + swipe * 2, 1, 1, '#5a3a1e');
 }
 
 // Side view facing right; `facing` -1 mirrors it. `frame` 0-3 moves the legs; `jumping` stretches them.
 // `crouch` lowers the body and wiggles the back end before a pounce.
 // `scratch` (0/1, or null) raises the front paws in turn to scratch whatever is in front.
-export function drawSideCat(ctx, { size, x, ground, facing, frame, jumping, face, equipped, now, palette, crouch = false, scratch = null }) {
+export function drawSideCat(context, { size, x, ground: groundUnits, facing, frame, jumping, face, equipped, now, palette, crouch = false, scratch = null }) {
+  ctx = context;
   C = palette;
-  const { L, H, hw, hh } = size.side;
-  const leg = crouch ? 0 : size.side.leg;
-  const ear = size.ear;
-  const bob = !jumping && !crouch && scratch === null && frame % 2 === 1 ? 1 : 0;
-  const wiggle = crouch ? [0, 1, 0, -1][Math.floor(now / 90) % 4] : 0;
+  const L = size.side.L * 2, H = size.side.H * 2, hw = size.side.hw * 2, hh = size.side.hh * 2;
+  const leg = crouch ? 0 : size.side.leg * 2;
+  const earH = size.ear * 2;
+  const ground = Math.round(groundUnits * 2);
+  const bob = !jumping && !crouch && scratch === null && frame % 2 === 1 ? 2 : 0;
+  const wiggle = crouch ? [0, 2, 0, -2][Math.floor(now / 90) % 4] : 0;
 
-  if (!jumping) groundShadow(ctx, x, ground, L + 6);
+  if (!jumping) groundShadow(Math.round(x * 2), ground, L + 12);
   ctx.save();
   ctx.translate(x, 0);
   ctx.scale(facing, 1);
 
-  const bx = -Math.floor(L / 2);
-  const bodyTop = ground - leg - H - bob;
-  const legTop = bodyTop + H - 2;
+  const bx = -Math.round(L / 2);
+  const bodyTop = ground - leg - H + 1 - bob;
+  const legTop = bodyTop + H - 4;
 
   // Tail, raised behind the body.
-  const sway = [0, 1, 0, -1][Math.floor(now / (crouch ? 90 : 200)) % 4];
-  drawTail(ctx, bx + wiggle, bodyTop + 2, [[0, 0], [-1, 0], [-2, -1], [-3, -2], [-3, -3], [-3 + sway, -4], [-2 + sway, -5]]);
+  const sway = [0, 1, 2, 1, 0, -1, -2, -1][Math.floor(now / (crouch ? 80 : 140)) % 8];
+  const tail = [];
+  for (let i = 0; i < 11; i++) {
+    const back = Math.min(i, 4) * 2;
+    const hook = i > 8 ? (i - 8) * 2 : 0;
+    tail.push([bx + 2 + wiggle - back + hook + Math.round((i / 11) * sway), bodyTop + 6 - Math.max(0, i - 2) * 2 - Math.min(i, 2)]);
+  }
+  thickLine(tail, 3, pointsOr(C.fur));
+  if (!C.points) P(tail[tail.length - 1][0], tail[tail.length - 1][1], 3, 3, C.stripe);
 
   // Legs: diagonal pairs step together. Jumping stretches front legs forward and back legs back.
-  const xs = [bx + 1, bx + 4, bx + L - 7, bx + L - 4];
-  const step = [1, 0, -1, 0][frame % 4];
+  const xs = [bx + 2, bx + 8, bx + L - 14, bx + L - 8];
+  const step = [2, 0, -2, 0][frame % 4];
   xs.forEach((lx, i) => {
     if (scratch !== null && i >= 2) return; // front paws are up, drawn below
     const pairA = i === 0 || i === 3;
-    const dx = jumping ? (i < 2 ? -2 : 2) : pairA ? step : -step;
-    const lifted = !jumping && !crouch && dx > 0 ? 1 : 0;
-    const h = leg + 2 + bob - lifted;
-    rect(ctx, lx + dx, legTop, 3, h, C.outline);
-    rect(ctx, lx + dx + 1, legTop, 1, h - 1, pointsOr(C.fur));
-    rect(ctx, lx + dx + 1, legTop + h - 2, 1, 1, pointsOr(C.furLight));
+    const dx = jumping ? (i < 2 ? -4 : 4) : pairA ? step : -step;
+    const lifted = !jumping && !crouch && dx > 0 ? 2 : 0;
+    const h = leg + 3 + bob - lifted;
+    const far = i === 1 || i === 2; // far legs are a touch darker
+    P(lx + dx, legTop, 5, h, C.outline);
+    P(lx + dx + 1, legTop, 3, h - 1, pointsOr(far ? C.shade : C.fur));
+    P(lx + dx + 1, legTop + h - 3, 3, 2, pointsOr(C.furLight));
   });
 
-  blob(ctx, bx, bodyTop, L, H, C.fur, C.outline);
-  rect(ctx, bx + 2, bodyTop + 1, L - 4, 1, C.shade); // darker along the back
-  rect(ctx, bx + 3, bodyTop + H - 3, L - 6, 2, C.furLight);
-  const stripeLength = C.stripes ? H - 4 : 2;
-  for (let i = 0; i < (C.stripes ? 4 : 3); i++) rect(ctx, bx + 3 + i * 3, bodyTop + 1, 1, stripeLength, C.stripe);
-  patch(ctx, bx + L - 9, bodyTop + 2, 3, 2);
+  shape(bx, bodyTop, L, H, C.fur, {
+    round: 2.4,
+    inside: () => {
+      P(bx, bodyTop, L, 3, C.shade); // darker along the back
+      P(bx + 4, bodyTop + H - 6, L - 8, 6, C.furLight); // light belly
+      if (C.stripes) for (let i = 0; i < 5; i++) P(bx + 5 + i * 5, bodyTop + 1, 2, H - 7, C.stripe);
+      else if (!C.patch && !C.points) for (let i = 0; i < 3; i++) P(bx + 6 + i * 5, bodyTop + 1, 1, 3, C.stripe);
+      if (C.patch) {
+        P(bx + 4, bodyTop + 2, 8, 6, C.patch);
+        P(bx + L - 14, bodyTop + 1, 7, 5, C.stripe);
+      }
+    },
+  });
 
-  const hx = bx + L - Math.floor(hw / 2) - 1;
-  const hy = bodyTop - hh + 5;
-  blob(ctx, hx, hy, hw, hh, C.fur, C.outline);
-  drawEars(ctx, hx, hy, hw, ear);
-  rect(ctx, hx + 3, hy + 1, 1, 2, C.stripe);
-  rect(ctx, hx + 5, hy + 1, 1, 2, C.stripe);
+  const hx = bx + L - Math.round(hw * 0.55);
+  const hy = bodyTop - hh + 10;
+  // Ears: the far one first, without the pink inside.
+  ear(hx + 3, hy + 4, Math.round(hw * 0.32), earH + 2, -1, false);
+  shape(hx, hy, hw, hh, C.fur, {
+    round: 2.4,
+    inside: () => {
+      P(hx, hy + hh - 4, hw, 4, C.shade);
+      if (C.stripes) {
+        P(hx + 6, hy + 2, 1, 4, C.stripe);
+        P(hx + 9, hy + 1, 1, 5, C.stripe);
+      }
+      if (C.patch) P(hx + 2, hy + 1, 7, 6, C.patch);
+      if (C.points) shape(hx + hw - 12, hy + Math.round(hh * 0.3), 14, hh, C.points, { round: 2 });
+    },
+  });
+  ear(hx + Math.round(hw * 0.42), hy + 4, Math.round(hw * 0.34), earH + 3, 1);
 
   const ey = hy + Math.round(hh * 0.4);
-  const ex = hx + hw - 5;
-  rect(ctx, hx + hw - 5, ey + 2, 4, Math.min(3, hy + hh - ey - 3), C.furLight);
-  if (C.points) rect(ctx, hx + hw - 6, ey - 1, 6, Math.min(6, hy + hh - ey), C.points); // dark mask
-  drawEye(ctx, ex, ey, face.eyes);
-  if (face.eyes === 'grumpy') {
-    rect(ctx, ex - 1, ey - 2, 1, 1, C.outline);
-    rect(ctx, ex, ey - 1, 2, 1, C.outline);
+  const ex = hx + hw - 9;
+  const eyeW = hw >= 30 ? 4 : 3;
+  if (!C.points) shape(hx + hw - 9, ey + eyeW - 1, 10, 7, C.furLight, { round: 2 });
+  drawEye(ex, ey, eyeW, face.eyes);
+  if (face.eyes === 'grumpy') P(ex - 1, ey - 1, eyeW + 1, 1, C.outline);
+  P(hx + hw - 2, ey + eyeW, 3, 2, C.pink); // nose
+  const mouthY = ey + eyeW + 3;
+  P(hx + hw - 5, mouthY, 3, face.mouth === 'open' ? 3 : 1, C.outline);
+  const whisker = whiskerColor();
+  P(hx + hw - 2, ey + eyeW + 1, 7, 1, whisker);
+  P(hx + hw - 2, ey + eyeW + 3, 6, 1, whisker);
+  if (face.blush) {
+    ctx.fillStyle = 'rgba(255, 140, 160, 0.55)';
+    ctx.fillRect((ex - 4) / 2, (ey + eyeW + 1) / 2, 1.5, 1);
   }
-  rect(ctx, hx + hw - 2, ey + 2, 1, 1, C.pink);
-  rect(ctx, hx + hw - 3, ey + 3 + (face.mouth === 'open' ? 1 : 0), 1, 1, C.outline);
-  rect(ctx, hx + hw - 1, ey + 3, 3, 1, C.outline);
-  if (face.blush) rect(ctx, ex - 2, ey + 2, 2, 1, C.blush);
 
-  if (equipped.collar) {
-    rect(ctx, hx + 1, hy + hh - 2, 5, 2, COLLAR_COLORS[equipped.collar]);
-    if (equipped.collar === 'collar_gold') rect(ctx, hx + 3, hy + hh - 1, 2, 2, '#ffcf3a');
-  }
-  drawHat(ctx, equipped.hat, hx, hy, hw);
+  drawCollar(equipped.collar, hx + 2, hy + hh - 5, Math.round(hw * 0.45));
+  drawHat(equipped.hat, hx, hy, hw);
   if (scratch !== null) {
     // Two front legs reaching forward from the chest, swiping in turn.
-    const chestX = bx + L - 3;
-    const chestY = bodyTop + H - 3;
+    const chestX = bx + L - 6;
+    const chestY = bodyTop + H - 6;
     for (const i of [0, 1]) {
-      const reach = i === scratch ? 3 : 0;
-      const pawX = chestX + 5 + i * 2;
-      const pawY = bodyTop - 1 - reach + i * 2;
-      for (let k = 0; k <= 3; k++) {
-        const x = Math.round(chestX + ((pawX - chestX) * k) / 3);
-        const y = Math.round(chestY + ((pawY - chestY) * k) / 3);
-        rect(ctx, x - 1, y - 1, 3, 3, C.outline);
-      }
-      for (let k = 0; k <= 3; k++) {
-        const x = Math.round(chestX + ((pawX - chestX) * k) / 3);
-        const y = Math.round(chestY + ((pawY - chestY) * k) / 3);
-        rect(ctx, x, y, 1, 1, k === 3 ? C.furLight : C.fur);
-      }
+      const reach = i === scratch ? 6 : 0;
+      const pawX = chestX + 10 + i * 4;
+      const pawY = bodyTop - 2 - reach + i * 4;
+      const points = [];
+      for (let k = 0; k <= 5; k++) points.push([Math.round(chestX + ((pawX - chestX) * k) / 5), Math.round(chestY + ((pawY - chestY) * k) / 5)]);
+      thickLine(points, 3, pointsOr(C.fur));
+      P(pawX, pawY, 3, 3, pointsOr(C.furLight));
     }
-    drawClawMarks(ctx, chestX + 10, bodyTop - 4, scratch);
+    drawClawMarks(chestX + 20, bodyTop - 8, scratch);
   }
   ctx.restore();
 
-  const left = x + facing * bx;
-  const right = x + facing * (bx + L + 3);
-  return { x: Math.min(left, right) - 4, y: hy - ear, w: L + 10, h: ground - hy + ear, headX: facing > 0 ? x + hx : x - hx - hw, headY: hy, hw };
+  const left = x + (facing * bx) / 2;
+  const right = x + (facing * (bx + L + 6)) / 2;
+  const headLeft = facing > 0 ? x + hx / 2 : x - (hx + hw) / 2;
+  return {
+    x: Math.min(left, right) - 4, y: (hy - earH) / 2, w: L / 2 + 10, h: (ground - hy + earH) / 2,
+    headX: headLeft, headY: hy / 2, hw: hw / 2,
+  };
 }
