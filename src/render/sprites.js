@@ -45,36 +45,73 @@ export const CAT_SIZES = {
 
 export const SPRITES = {
   hat_bow: {
-    colors: { o: '#7a2e45', p: '#ff7aa8', k: '#d6457a' },
-    rows: ['oo...oo', 'opo.opo', 'opkkkpo', 'opo.opo', 'oo...oo'],
+    cell: 0.5,
+    colors: { o: '#7a2e45', p: '#ff7aa8', l: '#ffc0d8', k: '#d6457a' },
+    rows: [
+      '.oo.......oo.', 'oppo.....oppo', 'oplpoo.oopppo', 'oppppokkopppo',
+      'opppokkkkoppo', 'oppppokkopppo', 'opppoo.oopppo', 'oppo.....oppo',
+      '.oo.......oo.',
+    ],
   },
   hat_party: {
+    cell: 0.5,
     colors: { o: '#3a2a4a', y: '#ffd84a', b: '#5ab0ff', r: '#ff5a6e' },
-    rows: ['...y...', '..oyo..', '..obo..', '.orrro.', '.obbbo.', 'orrrrro', 'obbbbbo'],
+    rows: [
+      '......yy......', '.....yyyy.....', '......yy......', '......oo......',
+      '.....orro.....', '.....obbo.....', '....orrrro....', '....obbbbo....',
+      '...orrrrrro...', '...obbybbbo...', '..orrrrrrrro..', '..obbbbbbbbo..',
+      '.oyyyyyyyyyyo.', '.oooooooooooo.',
+    ],
   },
   hat_crown: {
-    colors: { y: '#ffcf3a', r: '#e8384f', b: '#3a7bff', o: '#b8860b' },
-    rows: ['y...y...y', 'yy.yry.yy', 'yyyyyyyyy', 'ybyyryyby', 'ooooooooo'],
+    cell: 0.5,
+    colors: { y: '#ffcf3a', l: '#fff2a0', r: '#e8384f', b: '#3a7bff', o: '#b8860b' },
+    rows: [
+      'y.......y.......y', 'yy.....yly.....yy', 'yyy...yyryy...yyy', 'yyyy.yyyyyyy.yyyy',
+      'ylyyyyyyyyyyyyyly', 'yyyyyyyyyyyyyyyyy', 'yybyyyyrrryyyybyy', 'yyyyyyyyyyyyyyyyy',
+      'ooooooooooooooooo',
+    ],
   },
   collar_red: {
-    colors: { c: '#e8384f' },
-    rows: ['.cccccc.', 'cc....cc', 'cc....cc', '.cccccc.'],
+    cell: 0.5,
+    colors: { c: '#e8384f', l: '#ff7a8a', d: '#a82038' },
+    rows: [
+      '...cccccccccc...', '.ccllllllllllcc.', 'cc............cc', 'cc............cc',
+      'cc............cc', '.ccddddddddddcc.', '...cccccccccc...',
+    ],
   },
   collar_blue: {
-    colors: { c: '#3a7bff' },
-    rows: ['.cccccc.', 'cc....cc', 'cc....cc', '.cccccc.'],
+    cell: 0.5,
+    colors: { c: '#3a7bff', l: '#8ab4ff', d: '#2050b8' },
+    rows: [
+      '...cccccccccc...', '.ccllllllllllcc.', 'cc............cc', 'cc............cc',
+      'cc............cc', '.ccddddddddddcc.', '...cccccccccc...',
+    ],
   },
   collar_gold: {
-    colors: { c: '#8b4513', g: '#ffcf3a' },
-    rows: ['.cccccc.', 'cc....cc', 'cc....cc', '.ccggcc.', '...gg...'],
+    cell: 0.5,
+    colors: { c: '#8b4513', l: '#b86a30', d: '#5a2a08', g: '#ffcf3a' },
+    rows: [
+      '...cccccccccc...', '.ccllllllllllcc.', 'cc............cc', 'cc............cc',
+      'cc............cc', '.ccddddggddddcc.', '...ccccggcccc...', '......gggg......',
+      '.......gg.......',
+    ],
   },
   fish: {
-    colors: { o: '#2a4a7a', b: '#6cc3ff', k: '#1a1a2e' },
-    rows: ['..ooo..o', '.obbbooo', 'obkbbbbo', '.obbbooo', '..ooo..o'],
+    cell: 0.5,
+    colors: { o: '#2a4a7a', b: '#6cc3ff', l: '#a8e0ff', d: '#3a8ad8', w: '#ffffff', k: '#1a1a2e' },
+    rows: [
+      '....ooooo.....oo', '..oobbbbboo..obo', '.obwbbblbbbooobo', 'obkbbbbbbbbbbbbo',
+      'obbbbbbbbbbbbbbo', '.obbbbdbbbbooobo', '..oodddddoo..obo', '....ooooo.....oo',
+    ],
   },
   goldfish: {
-    colors: { o: '#a0521d', b: '#ffb347', k: '#1a1a2e' },
-    rows: ['..ooo..o', '.obbbooo', 'obkbbbbo', '.obbbooo', '..ooo..o'],
+    cell: 0.5,
+    colors: { o: '#a0521d', b: '#ffb347', l: '#ffd890', d: '#e08a2a', w: '#ffffff', k: '#1a1a2e' },
+    rows: [
+      '....ooooo.....oo', '..oobbbbboo..obo', '.obwbbblbbbooobo', 'obkbbbbbbbbbbbbo',
+      'obbbbbbbbbbbbbbo', '.obbbbdbbbbooobo', '..oodddddoo..obo', '....ooooo.....oo',
+    ],
   },
   toy_yarn: {
     cell: 0.5,
@@ -152,13 +189,23 @@ export const SPRITES = {
     rows: ['oooooooooo', 'obbbbbbbbo', '.obbbbbbo.', '..oooooo..'],
   },
   food_kibble: {
-    colors: { k: '#b06a3b', o: '#3a3a5a', b: '#5ab0ff' },
-    rows: ['..k.kk.k..', '.kkkkkkkk.', 'oooooooooo', 'obbbbbbbbo', '.obbbbbbo.', '..oooooo..'],
+    cell: 0.5,
+    colors: { k: '#b06a3b', h: '#d8945a', o: '#2a4a7a', l: '#a8d8ff', b: '#5ab0ff' },
+    rows: [
+      '......kk..kk..k.....', '....kkkkkkkkkkkk....', '...kkhkkkkhkkkhkk...', 'oooooooooooooooooooo',
+      'ollllllllllllllllllo', 'obbbbbbbbbbbbbbbbbbo', '.obbbbbbbbbbbbbbbbo.', '..obbbbbbbbbbbbbbo..',
+      '...oooooooooooooo...',
+    ],
   },
   food_fish: null, // uses fish
   food_cream: {
-    colors: { w: '#fffaf0', o: '#7a2e45', p: '#ff8fa3' },
-    rows: ['..wwwwww..', '.wwwwwwww.', 'oooooooooo', 'oppppppppo', '.oppppppo.', '..oooooo..'],
+    cell: 0.5,
+    colors: { w: '#fffaf0', h: '#ffffff', o: '#7a2e45', l: '#ffc0d0', b: '#ff8fa3' },
+    rows: [
+      '......wwwwwwww......', '....wwwwwwwwwwww....', '...wwhwwwwwwwwwww...', 'oooooooooooooooooooo',
+      'ollllllllllllllllllo', 'obbbbbbbbbbbbbbbbbbo', '.obbbbbbbbbbbbbbbbo.', '..obbbbbbbbbbbbbbo..',
+      '...oooooooooooooo...',
+    ],
   },
   litter: {
     colors: { o: '#3c5a6e', S: '#f1d9a7', B: '#7fb8d6' },
@@ -355,8 +402,13 @@ export const SPRITES = {
     rows: ['...gg...', '.gggggg.', '.gg..gg.', 'ggo..ogg', 'ggo..ogg', '.gg..gg.', '.gggggg.', '...gg...'],
   },
   basket: {
-    colors: { o: '#6b3e1f', b: '#c98b4a', l: '#e0aa6a' },
-    rows: ['oo............oo', 'obo..........obo', 'obbllllllllllbbo', 'obblbblbblbblbbo', '.obbbbbbbbbbbbo.', '..oooooooooooo..'],
+    cell: 0.5,
+    colors: { o: '#6b3e1f', b: '#c98b4a', l: '#e0aa6a', d: '#8a5a2a' },
+    rows: [
+      'oo............................oo', 'obo..........................obo', 'obbo........................obbo', 'obbllllllllllllllllllllllllllbbo',
+      'obblbbdlbbdlbbdlbbdlbbdlbbdlbbbo', 'obbdbbldbbldbbldbbldbbldbbllbbbo', 'obblbbdlbbdlbbdlbbdlbbdlbbdlbbbo', 'obbdbbldbbldbbldbbldbbldbbllbbbo',
+      'obblbbdlbbdlbbdlbbdlbbdlbbdlbbbo', 'obbdbbldbbldbbldbbldbbldbbllbbbo', '.obbbbbbbbbbbbbbbbbbbbbbbbbbbbo.', '..oooooooooooooooooooooooooooo..',
+    ],
   },
 };
 

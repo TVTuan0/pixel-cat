@@ -443,3 +443,29 @@ export function drawPlant(ctx, now) {
   F(ctx, 68, 158, 18, 3, '#b85a38');
   F(ctx, 68, 158, 18, 1, '#d0805a');
 }
+
+export function drawAutoFeeder(ctx) {
+  fineShape(ctx, 122, 196, 16, 14, '#d8e0ea', '#3a3a5a', {
+    round: 3,
+    inside: () => {
+      F(ctx, 124, 197, 4, 12, '#eef2f8');
+      F(ctx, 126, 199, 8, 6, '#b06a3b'); // kibble behind the window
+      F(ctx, 126, 199, 8, 1, '#d8945a');
+      F(ctx, 127, 200, 2, 3, 'rgba(255,255,255,0.5)');
+    },
+  });
+  F(ctx, 134, 207, 2, 2, '#5cc96b'); // power light
+  fineShape(ctx, 119, 208, 22, 7, '#5ab0ff', '#2a4a7a', { round: 2.5, inside: () => F(ctx, 120, 209, 20, 2, '#a8d8ff') });
+}
+
+export function drawLitterHood(ctx) {
+  fineShape(ctx, 276, 184, 32, 22, '#9fd6ff', '#3c5a6e', {
+    round: 2.2,
+    inside: () => {
+      F(ctx, 280, 186, 12, 2, '#d8f0ff'); // shine
+      F(ctx, 276, 200, 32, 6, '#7fb8d6');
+      fineShape(ctx, 286, 192, 12, 14, '#2a2a3a', '#2a2a3a', { round: 2 }); // the way in
+      F(ctx, 300, 190, 3, 2, '#5cc96b'); // ready light
+    },
+  });
+}

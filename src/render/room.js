@@ -3,10 +3,11 @@ import { drawSprite } from './sprites.js';
 import { rect, blob, line, disc } from './draw.js';
 import { ROOM_W, ROOM_H, FLOOR_Y, ROOM_DOOR } from './layout.js';
 import { weatherOf, seasonOf } from '../rules.js';
+import { F, fineShape, fineLine } from './fine.js';
 import {
   WOOD, WOOD_DARK, drawWallTrim, drawPlanks, drawTiles, drawCarpet, drawWindowFrame, drawCurtains, drawClock, drawGardenDoor,
   drawCatTree, drawSofa, drawBookshelf, drawLamp, drawFishbowlTable, drawFrame, drawBed, drawCushion, drawBeanbag, drawRug,
-  drawLitter, drawBowl, drawPlant,
+  drawLitter, drawBowl, drawPlant, drawAutoFeeder, drawLitterHood,
 } from './furniture.js';
 
 const WALLS = {
@@ -312,153 +313,160 @@ function drawTrophyShelf(ctx, owned) {
 }
 
 
-// ---- How each item looks once an angry cat has broken it ----
+// ---- How each item looks once an angry cat has broken it (fine pixels: half a room unit) ----
 
 const STUFFING = '#f4f1ea';
 const STUFFING_SHADE = '#d8d2c4';
 
 // A tuft of white stuffing poking out of a tear.
 function fluff(ctx, x, y) {
-  rect(ctx, x, y, 3, 2, STUFFING);
-  rect(ctx, x + 1, y - 1, 1, 1, STUFFING);
-  rect(ctx, x, y + 1, 3, 1, STUFFING_SHADE);
+  fineShape(ctx, x, y, 7, 5, STUFFING, STUFFING_SHADE, { round: 2 });
+  F(ctx, x + 2, y - 1, 2, 1, STUFFING);
 }
 
-// A jagged tear across fabric.
+// A jagged tear across fabric, dark inside.
 function tear(ctx, x, y, length, color) {
-  for (let i = 0; i < length; i++) rect(ctx, x + i, y + (i % 2), 1, 1, color);
+  for (let i = 0; i < length; i++) {
+    F(ctx, x + i, y + (i % 2), 1, 1, color);
+    F(ctx, x + i, y + 1 + (i % 2), 1, 1, 'rgba(0,0,0,0.25)');
+  }
 }
 
-// Three slanted claw marks.
-function claws(ctx, x, y, color, length = 4) {
-  for (let m = 0; m < 3; m++) for (let i = 0; i < length; i++) rect(ctx, x + m * 2 + Math.floor(i / 2), y + i, 1, 1, color);
+// Three slanted claw marks, each with a light edge.
+function claws(ctx, x, y, color, length = 8) {
+  for (let m = 0; m < 3; m++) {
+    for (let i = 0; i < length; i++) {
+      F(ctx, x + m * 3 + Math.floor(i / 2), y + i, 1, 1, color);
+      F(ctx, x + m * 3 + Math.floor(i / 2) + 1, y + i, 1, 1, 'rgba(255,255,255,0.2)');
+    }
+  }
 }
 
 function brokenSofa(ctx) {
-  claws(ctx, 58, 54, '#2f4f8a');
-  claws(ctx, 80, 55, '#2f4f8a');
-  tear(ctx, 56, 69, 9, '#2f4f8a');
-  fluff(ctx, 58, 67);
-  tear(ctx, 78, 77, 7, '#2f4f8a');
-  fluff(ctx, 81, 75);
-  fluff(ctx, 46, 63); // armrest
-  fluff(ctx, 66, 90); // on the floor
-  rect(ctx, 86, 92, 2, 1, STUFFING);
+  claws(ctx, 116, 108, '#2f4f8a');
+  claws(ctx, 160, 110, '#2f4f8a');
+  tear(ctx, 112, 138, 18, '#2f4f8a');
+  fluff(ctx, 116, 134);
+  tear(ctx, 156, 154, 14, '#2f4f8a');
+  fluff(ctx, 162, 150);
+  fluff(ctx, 92, 126); // armrest
+  fluff(ctx, 132, 180); // on the floor
+  fluff(ctx, 172, 184);
 }
 
 function brokenBookshelf(ctx) {
-  rect(ctx, 129, 35, 8, 11, WOOD_DARK); // books pulled off the shelves...
-  rect(ctx, 138, 63, 7, 11, WOOD_DARK);
+  F(ctx, 258, 70, 14, 22, WOOD_DARK); // books pulled off the shelves...
+  F(ctx, 276, 100, 12, 20, WOOD_DARK);
   // ...and lying on the floor.
-  rect(ctx, 116, 89, 8, 2, '#e8384f');
-  rect(ctx, 121, 92, 7, 2, '#3a7bff');
-  rect(ctx, 130, 90, 6, 2, '#f2c14e');
-  rect(ctx, 139, 93, 6, 2, '#ffffff');
-  rect(ctx, 142, 93, 1, 2, '#9a9a9a');
-  rect(ctx, 147, 90, 2, 5, '#5cc96b');
+  for (const [x, y, w, color] of [[232, 178, 16, '#e8384f'], [242, 184, 14, '#3a7bff'], [260, 180, 12, '#f2c14e']]) {
+    F(ctx, x, y, w, 4, color);
+    F(ctx, x, y, w, 1, 'rgba(255,255,255,0.4)');
+    F(ctx, x + 2, y + 1, 1, 2, 'rgba(255,255,255,0.5)');
+  }
+  F(ctx, 278, 186, 12, 4, '#ffffff'); // an open book
+  F(ctx, 284, 186, 1, 4, '#9a9a9a');
+  F(ctx, 294, 180, 4, 10, '#5cc96b');
 }
 
 function brokenFishbowl(ctx, now) {
-  line(ctx, 108, 68, 111, 71, '#ffffff'); // cracked glass
-  line(ctx, 111, 71, 109, 74, '#ffffff');
-  line(ctx, 113, 69, 115, 72, '#ffffff');
-  blob(ctx, 101, 87, 20, 3, '#9fd6ff', '#6cc3ff'); // puddle under the table
-  rect(ctx, 110, 80 + (Math.floor(now / 300) % 4) * 2, 1, 1, '#9fd6ff'); // dripping
+  fineLine(ctx, 214, 132, 220, 140, '#ffffff'); // cracked glass
+  fineLine(ctx, 220, 140, 216, 146, '#ffffff');
+  fineLine(ctx, 226, 134, 230, 142, '#ffffff');
+  fineShape(ctx, 200, 174, 44, 6, '#9fd6ff', '#6cc3ff', { round: 2 }); // puddle under the table
+  F(ctx, 220, 160 + (Math.floor(now / 300) % 4) * 4, 1, 2, '#9fd6ff'); // dripping
 }
 
 function brokenFrame(ctx) {
-  line(ctx, 107, 35, 113, 40, '#ffffff');
-  line(ctx, 113, 40, 110, 43, '#ffffff');
-  line(ctx, 113, 40, 118, 38, '#ffffff');
-  rect(ctx, 103, 46, 2, 1, WOOD); // a splinter hanging off
+  fineLine(ctx, 214, 70, 226, 80, '#ffffff');
+  fineLine(ctx, 226, 80, 220, 88, '#ffffff');
+  fineLine(ctx, 226, 80, 236, 76, '#ffffff');
+  F(ctx, 206, 92, 4, 2, WOOD); // a splinter hanging off
 }
 
 function brokenRug(ctx) {
-  claws(ctx, 70, 102, '#7a2e20', 6);
-  claws(ctx, 92, 104, '#7a2e20', 6);
-  for (const x of [63, 67, 75, 88, 99, 104]) rect(ctx, x, 114, 1, 1 + (x % 2), '#c8553d'); // loose threads
+  claws(ctx, 140, 204, '#7a2e20', 12);
+  claws(ctx, 184, 208, '#7a2e20', 12);
+  for (const x of [126, 134, 150, 176, 198, 208]) F(ctx, x, 227, 1, 2 + (x % 3), '#c8553d'); // loose threads
 }
 
 function brokenBeanbag(ctx) {
-  tear(ctx, 97, 101, 7, '#a0521d');
-  for (const [x, y] of [[90, 110], [93, 112], [96, 111], [109, 109], [112, 111], [105, 112], [100, 113]]) rect(ctx, x, y, 1, 1, '#ffffff');
+  tear(ctx, 194, 202, 14, '#a0521d');
+  for (const [x, y] of [[180, 220], [186, 224], [192, 222], [218, 218], [224, 222], [210, 224], [200, 226]]) F(ctx, x, y, 2, 2, '#ffffff');
 }
 
 function brokenBed(ctx) {
-  tear(ctx, 26, 106, 9, '#7a2e45');
-  fluff(ctx, 30, 104);
-  claws(ctx, 38, 105, '#7a2e45', 3);
+  tear(ctx, 52, 212, 18, '#7a2e45');
+  fluff(ctx, 60, 208);
+  claws(ctx, 76, 210, '#7a2e45', 6);
 }
 
 function brokenLitterHood(ctx) {
-  line(ctx, 142, 95, 145, 98, '#2a2a3a');
-  line(ctx, 145, 98, 143, 100, '#2a2a3a');
-  rect(ctx, 144, 97, 2, 1, '#e8384f'); // warning light instead of green
+  fineLine(ctx, 282, 188, 290, 196, '#2a2a3a');
+  fineLine(ctx, 290, 196, 286, 202, '#2a2a3a');
+  F(ctx, 300, 190, 3, 2, '#e8384f'); // warning light instead of green
 }
 
 function brokenYarn(ctx, now) {
   // A loose thread trailing across the floor.
   const wave = Math.floor(now / 600) % 2;
-  for (let x = 86; x < 108; x++) rect(ctx, x, 112 + Math.round(Math.sin(x / 3 + wave) * 1.5), 1, 1, '#9b7bff');
+  for (let x = 172; x < 216; x++) F(ctx, x, 225 + Math.round(Math.sin(x / 5 + wave) * 2), 1, 1, '#9b7bff');
 }
 
 function brokenToyMouse(ctx) {
-  fluff(ctx, 125, 110);
-  rect(ctx, 129, 113, 2, 1, '#5a5a6a');
+  fluff(ctx, 250, 220);
+  F(ctx, 258, 226, 4, 1, '#5a5a6a');
 }
 
-// The cat tree with a frayed post, a sagging top and its toy fallen to the floor.
+// The cat tree with a frayed post, a sagging top platform and its toy fallen to the floor.
 function drawBrokenCatTree(ctx) {
-  rect(ctx, 4, 84, 30, 4, '#a87a50');
-  rect(ctx, 4, 87, 30, 1, '#6b4420');
-  rect(ctx, 16, 50, 5, 34, '#d9c49a');
-  for (let y = 52; y < 84; y += 3) rect(ctx, 16, y, 5, 1, '#bfa577');
-  for (let y = 53; y < 82; y += 4) { // frayed rope
-    rect(ctx, 14, y, 2, 1, '#bfa577');
-    rect(ctx, 21, y + 2, 2, 1, '#bfa577');
+  fineShape(ctx, 8, 166, 60, 10, '#a87a50', '#6b4420', { round: 4 });
+  F(ctx, 31, 100, 12, 68, '#8a7550');
+  F(ctx, 32, 100, 10, 68, '#d9c49a');
+  for (let y = 101; y < 168; y += 3) F(ctx, 32, y, 10, 1, '#bfa577');
+  for (let y = 104; y < 164; y += 7) { // frayed rope
+    F(ctx, 28, y, 4, 1, '#bfa577');
+    F(ctx, 42, y + 3, 4, 1, '#bfa577');
+    F(ctx, 27, y + 1, 2, 1, '#bfa577');
   }
-  for (let i = 0; i < 24; i++) { // top platform, tilted
-    const drop = Math.floor(i / 8);
-    rect(ctx, 5 + i, 46 + drop, 1, 3, '#7a6ad6');
-    rect(ctx, 5 + i, 49 + drop, 1, 1, '#4a3a8a');
+  for (let i = 0; i < 48; i++) { // top platform, tilted
+    const drop = Math.floor(i / 10);
+    F(ctx, 10 + i, 90 + drop, 1, 1, '#3a2a6a');
+    F(ctx, 10 + i, 91 + drop, 1, 6, '#7a6ad6');
+    F(ctx, 10 + i, 92 + drop, 1, 1, '#9a8ae6');
+    F(ctx, 10 + i, 97 + drop, 1, 1, '#3a2a6a');
   }
-  rect(ctx, 21, 64, 13, 3, '#7a6ad6');
-  rect(ctx, 21, 66, 13, 1, '#4a3a8a');
-  claws(ctx, 23, 64, '#4a3a8a', 3);
-  rect(ctx, 26, 50, 1, 2, '#4a3a2a'); // the string snapped
-  rect(ctx, 30, 88, 3, 3, '#ff5a6e');
+  fineShape(ctx, 42, 126, 26, 10, '#7a6ad6', '#3a2a6a', { round: 5 });
+  claws(ctx, 46, 127, '#3a2a6a', 6);
+  F(ctx, 52, 100, 1, 4, '#4a3a2a'); // the string snapped
+  fineShape(ctx, 60, 176, 7, 7, '#ff5a6e', '#a02a3a', { round: 2 });
 }
 
 // The lamp with a crooked, cracked shade. It no longer lights up.
 function drawBrokenLamp(ctx) {
-  rect(ctx, 152, 38, 2, 46, '#4a4a5a');
-  rect(ctx, 148, 84, 10, 2, '#4a4a5a');
-  for (let i = 0; i < 10; i++) {
-    const w = 8 + Math.floor(i * 0.5);
-    rect(ctx, 153 - Math.floor(w / 2) + Math.floor(i / 3) - 1, 29 + i, w, 1, '#c8a860');
+  F(ctx, 302, 76, 6, 92, '#3a3a4a');
+  F(ctx, 303, 76, 4, 92, '#5a5a6a');
+  fineShape(ctx, 294, 166, 22, 6, '#4a4a5a', '#2a2a3a', { round: 3 });
+  for (let i = 0; i < 20; i++) {
+    const w = 16 + Math.floor(i * 0.5);
+    F(ctx, 305 - Math.floor(w / 2) + Math.floor(i / 4) - 2, 58 + i, w, 1, '#c8a860');
   }
-  line(ctx, 150, 30, 153, 35, '#6b4420');
-  line(ctx, 153, 35, 151, 38, '#6b4420');
+  fineLine(ctx, 300, 60, 306, 70, '#6b4420');
+  fineLine(ctx, 306, 70, 302, 76, '#6b4420');
 }
 
 // The plant knocked over, its pot on its side and soil spilled on the floor.
 function drawBrokenPlant(ctx) {
-  rect(ctx, 30, 81, 11, 6, '#7a3a2a');
-  rect(ctx, 31, 82, 9, 4, '#d0704a');
-  rect(ctx, 41, 82, 1, 4, '#3a2a1e'); // open top of the pot
-  for (const [x, y] of [[42, 84], [44, 85], [46, 84], [43, 86], [47, 86]]) rect(ctx, x, y, 2, 1, '#5e4634');
-  for (const [x, y] of [[44, 82], [47, 81], [46, 83], [49, 82], [50, 84]]) rect(ctx, x, y, 2, 1, '#4caf50');
+  fineShape(ctx, 58, 162, 24, 12, '#d0704a', '#7a3a2a', { round: 3 });
+  fineShape(ctx, 79, 163, 5, 10, '#3a2a1e', '#3a2a1e', { round: 2 }); // open top of the pot
+  for (const [x, y] of [[86, 168], [90, 171], [94, 168], [88, 173], [96, 172], [100, 170]]) F(ctx, x, y, 3, 2, '#5e4634');
+  for (const [x, y] of [[88, 162], [94, 160], [92, 165], [99, 163], [101, 167]]) fineShape(ctx, x, y, 5, 4, '#5cc96b', '#2e7d32', { round: 2 });
 }
 
 // The feeder knocked on its side with kibble everywhere.
 function drawBrokenFeeder(ctx) {
-  rect(ctx, 60, 103, 11, 6, '#3a3a5a');
-  rect(ctx, 61, 104, 9, 4, '#d8e0ea');
-  rect(ctx, 63, 105, 3, 2, '#b06a3b');
-  for (const [x, y] of [[57, 108], [72, 107], [74, 110], [67, 111], [70, 112], [59, 111]]) rect(ctx, x, y, 2, 1, '#b06a3b');
+  fineShape(ctx, 120, 206, 22, 12, '#d8e0ea', '#3a3a5a', { round: 3, inside: () => F(ctx, 126, 209, 6, 6, '#b06a3b') });
+  for (const [x, y] of [[114, 216], [144, 214], [148, 220], [134, 222], [140, 224], [118, 222]]) F(ctx, x, y, 3, 2, '#b06a3b');
 }
-
-
 
 // The floor gets dirtier as the dirtiest cat's cleanliness drops: stains, then muddy paw prints, then messes with flies.
 const DIRT = { stains: 40, paws: 25, mess: 10 };
@@ -543,9 +551,9 @@ export function drawRoom(ctx, state, now, clock) {
   else if (has('cushion')) drawCushion(ctx);
   item('decor_beanbag', () => drawBeanbag(ctx), { damage: () => brokenBeanbag(ctx) });
   if (has('bowl')) drawBowl(ctx, now);
-  item('auto_feeder', () => drawSprite(ctx, 'auto_feeder', 61, 99), { brokenDraw: () => drawBrokenFeeder(ctx) });
+  item('auto_feeder', () => drawAutoFeeder(ctx), { brokenDraw: () => drawBrokenFeeder(ctx) });
   if (has('litter')) drawLitter(ctx, cleanliness, now);
-  item('auto_litter', () => drawSprite(ctx, 'auto_litter', 138, 94), { damage: () => brokenLitterHood(ctx) });
+  item('auto_litter', () => drawLitterHood(ctx), { damage: () => brokenLitterHood(ctx) });
   item('toy_yarn', () => drawSprite(ctx, 'toy_yarn', 80, 108), { damage: () => brokenYarn(ctx, now) });
   item('toy_mouse', () => drawSprite(ctx, 'toy_mouse', 122, 112, Math.floor(now / 2000) % 2 === 0), { damage: () => brokenToyMouse(ctx) });
   drawMesses(ctx, cleanliness, now);
