@@ -37,9 +37,9 @@ Note: a cat adopted on itch.io lives separately from one adopted on the main sit
 
 > **Pixel Cat** – a cozy pixel kitten that lives in your browser.
 >
-> Adopt a kitten, pick its fur and give it a name. Feed it, pet it, clean its litter box and turn off the lights at bedtime. It walks around its room, naps on the sofa and climbs its cat tree.
+> Adopt a kitten, pick its fur and give it a name. Feed it, pet it, clean its litter box and turn off the lights at bedtime. Your kitten moves into a shabby, empty room: play mini games to earn coins and turn it into a cozy home. Furniture and cat gear help your cat stay happy, but leave it hungry or bored too long and it gets angry and scratches things up.
 >
-> Come back every day: your cat grows from kitten to adult, and once it has grown a little you can adopt more kittens, up to 5 cats sharing one cozy room. You get a daily gift and new daily tasks, and there are 14 stickers to collect. Play Fish Catch to earn coins for hats, collars, toys, wallpapers and furniture.
+> Come back every day: your cat grows from kitten to adult, and once it has grown a little you can adopt more kittens, up to 5 cats sharing one cozy room. You get a daily gift and new daily tasks, and there are 15 stickers to collect. Play Fish Catch and Mouse Catch to earn coins for furniture, toys, hats, collars and wallpapers.
 >
 > The weather outside changes daily, the clock shows your real time, and the room decorates itself for Tết, Mid-Autumn, Halloween and Christmas.
 >
@@ -51,9 +51,9 @@ Note: a cat adopted on itch.io lives separately from one adopted on the main sit
 
 > **Pixel Cat** – bé mèo pixel đáng yêu sống ngay trong trình duyệt.
 >
-> Nhận nuôi mèo con, chọn màu lông và đặt tên. Cho mèo ăn, vuốt ve, dọn hộp cát và tắt đèn khi tới giờ ngủ. Mèo tự đi dạo trong phòng, ngủ trên sofa và leo trụ cào.
+> Nhận nuôi mèo con, chọn màu lông và đặt tên. Cho mèo ăn, vuốt ve, dọn hộp cát và tắt đèn khi tới giờ ngủ. Mèo dọn vào một căn phòng cũ trống trơn: chơi mini game kiếm xu để biến nó thành tổ ấm. Nội thất và đồ dùng giúp mèo luôn vui khỏe, nhưng để mèo đói hay buồn quá lâu thì mèo sẽ nổi giận và cào hỏng đồ.
 >
-> Ghé chơi mỗi ngày: mèo lớn dần từ mèo con thành mèo lớn, rồi bạn có thể nhận nuôi thêm, tối đa 5 bé mèo chung một căn phòng. Có quà mỗi ngày, nhiệm vụ mới mỗi ngày và 14 nhãn dán để sưu tầm. Chơi Bắt Cá để kiếm xu mua mũ, vòng cổ, đồ chơi, giấy dán tường và nội thất.
+> Ghé chơi mỗi ngày: mèo lớn dần từ mèo con thành mèo lớn, rồi bạn có thể nhận nuôi thêm, tối đa 5 bé mèo chung một căn phòng. Có quà mỗi ngày, nhiệm vụ mới mỗi ngày và 15 nhãn dán để sưu tầm. Chơi Bắt Cá và Bắt Chuột để kiếm xu mua nội thất, đồ chơi, mũ, vòng cổ và giấy dán tường.
 >
 > Thời tiết ngoài cửa sổ đổi theo ngày, đồng hồ chạy theo giờ thật, và căn phòng tự trang trí dịp Tết, Trung Thu, Halloween và Giáng Sinh.
 >
@@ -67,7 +67,7 @@ Good places: r/WebGames, r/incremental_games (as a "cozy idle" game), r/IndieGam
 
 > **I made a tiny pixel cat you can raise in your browser**
 >
-> No sign-up, works on phones. Your kitten walks around its room, grows up over a week, and the room decorates itself for holidays. There's a little fish-catching game to earn hats and furniture, and a weekly contest where players vote for the cutest room.
+> No sign-up, works on phones. Your kitten walks around its room, grows up over a week, and the room decorates itself for holidays. It starts in an empty room that you furnish with coins from little mini games (catch fish, catch mice), and a weekly contest where players vote for the cutest room.
 >
 > https://pixel-cat-green.vercel.app
 >
@@ -113,6 +113,6 @@ Counting is off until a GoatCounter code is set. To turn it on:
 
 1. Make a free account at https://www.goatcounter.com and pick a code (for example `pixelcat`).
 2. In Vercel: project **pixel-cat** → Settings → Environment Variables → add `VITE_GOATCOUNTER_CODE` = your code, for **Production**.
-3. Deploy again. Visits and these events then show in GoatCounter: `adopt`, `return_day2`, `return_day7`, `share_card`, `clip`, `invite`, `install`, `fish_game`, `task_done`, `sticker`, `buy_<item>`, `adopt_more` (a 2nd–5th cat), `contest_enter`, `contest_vote` (once per voting session), `contest_prize`.
+3. Deploy again. Visits and these events then show in GoatCounter: `adopt`, `return_day2`, `return_day7`, `share_card`, `clip`, `invite`, `install`, `fish_game`, `mouse_game`, `repair`, `task_done`, `sticker`, `buy_<item>`, `adopt_more` (a 2nd–5th cat), `contest_enter`, `contest_vote` (once per voting session), `contest_prize`.
 
 The day-2 and day-7 returns compared with `adopt` show how many players come back. For the contest, `contest_enter` and `contest_vote` show how many players take part each week.
