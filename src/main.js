@@ -2,7 +2,7 @@ import { t, setLanguage, guessLanguage } from './i18n/index.js';
 import { createState, loadState, saveState, clearState } from './state.js';
 import {
   applyElapsed, feed, pet, clean, toggleSleep, canPlay, finishMiniGame,
-  buy, equip, claimDailyGift, stageOf, ageInDays, recordAction, claimTask, checkStickers,
+  buy, equip, repair, claimDailyGift, stageOf, ageInDays, recordAction, claimTask, checkStickers,
   selectCat, nextCatOffer, adoptCat, rewardContestEntry, claimContestPrize,
 } from './rules.js';
 import { buildEntry } from './contestRoom.js';
@@ -148,6 +148,15 @@ const handlers = {
       onEquip: (id) => {
         commit(equip(state, id));
         sfx.tap();
+        reopen();
+      },
+      onRepair: (id) => {
+        const r = repair(state, id);
+        if (r.result !== 'ok') return result(t('poor'), sfx.no);
+        commit(r.state);
+        track('repair');
+        sfx.coin();
+        say(t('repaired'));
         reopen();
       },
     });
@@ -356,6 +365,17 @@ async function checkEvents() {
   if (eventsRunning || !state || isSheetOpen()) return;
   eventsRunning = true;
   const now = Date.now();
+  if (!state.basicsHintSeen) {
+    commit({ ...state, basicsHintSeen: true });
+    await showMessage(t('basicsTitle'), t('basicsBody'), spriteCanvas('bowl', 8));
+  }
+  if (state.news?.length) {
+    const news = state.news;
+    commit({ ...state, news: [] });
+    sfx.no();
+    const lines = news.map((n) => t('brokeLine', { name: n.cat, item: t(`item_${n.item}`) })).join(' ');
+    await showMessage(t('brokeTitle'), `${lines} ${t('brokeBody')}`, spriteCanvas(news[0].item, 6));
+  }
   const gift = claimDailyGift(state, now);
   if (gift.coins) {
     // The gift comes once per day, so this is a good moment to count day-2 and day-7 returns.

@@ -6,7 +6,7 @@ import { stageOf } from './rules.js';
 const ids = (...slots) => SHOP_ITEMS.filter((i) => slots.includes(i.slot)).map((i) => i.id);
 const HATS = ids('hat');
 const COLLARS = ids('collar');
-const DECOR = ids('decor', 'toy');
+const DECOR = ids('basic', 'gear', 'furniture', 'decor', 'toy'); // everything that stands in the room
 const WALLS = ids('wall');
 const FLOORS = ids('floor');
 const STAGE_IDS = STAGES.map((s) => s.id);
@@ -25,6 +25,7 @@ export function buildEntry(state, now) {
   return {
     cats: state.cats.map((c) => ({ name: c.name, fur: c.fur, stage: stageOf(c, now), hat: c.equipped.hat, collar: c.equipped.collar })),
     decor: state.owned.filter((id) => DECOR.includes(id)),
+    broken: (state.broken ?? []).filter((id) => DECOR.includes(id)),
     wall: state.equipped.wall,
     floor: state.equipped.floor,
   };
@@ -46,6 +47,7 @@ export function entryToScene(entry, now) {
     })),
     selected: 1,
     owned: entry.decor,
+    broken: entry.broken ?? [],
     equipped: { wall: entry.wall, floor: entry.floor },
     asleep: false,
     lastSeen: now,
@@ -83,5 +85,6 @@ export function cleanEntry(entry) {
   }
   if (!oneOf(entry.wall ?? null, WALLS) || !oneOf(entry.floor ?? null, FLOORS)) return null;
   const decor = Array.isArray(entry.decor) ? [...new Set(entry.decor.filter((id) => DECOR.includes(id)))] : [];
-  return { cats, decor, wall: entry.wall ?? null, floor: entry.floor ?? null };
+  const broken = Array.isArray(entry.broken) ? [...new Set(entry.broken.filter((id) => decor.includes(id)))] : [];
+  return { cats, decor, broken, wall: entry.wall ?? null, floor: entry.floor ?? null };
 }

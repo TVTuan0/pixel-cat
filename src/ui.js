@@ -7,7 +7,7 @@ import { entryToScene } from './contestRoom.js';
 import { runFishGame, drawFishGameIdle } from './minigame/fish.js';
 import { runMouseGame, drawMouseGameIdle } from './minigame/mouse.js';
 import { FOODS, SHOP_ITEMS, FISH_GAME_SECONDS, MOUSE_GAME_SECONDS, EQUIP_SLOTS, STICKERS, CONTEST_ENTRY_COINS, DAY } from './config.js';
-import { ageInDays, stageOf, dailyTasks, taskProgress, selectedCat, needsCare, wornItem, nextCatOffer } from './rules.js';
+import { ageInDays, stageOf, dailyTasks, taskProgress, selectedCat, needsCare, wornItem, nextCatOffer, repairPrice } from './rules.js';
 
 const $ = (id) => document.getElementById(id);
 const sheet = $('sheet');
@@ -71,6 +71,8 @@ export function initUI(handlers) {
     if (sheet.dataset.locked) e.preventDefault();
   });
   sheet.addEventListener('close', () => {
+    // The close event arrives a moment later. If another sheet has opened since, it is not this one's to clean up.
+    if (sheet.open) return;
     sheetCleanup?.();
     sheetCleanup = null;
   });
@@ -208,18 +210,29 @@ export function openFeed(state, onPick) {
   openSheet(t('feed'), el('div', { class: 'list' }, rows));
 }
 
-export function openShop(state, { onBuy, onEquip }) {
-  const slots = ['hat', 'collar', 'toy', 'decor', 'wall', 'floor'];
+// What an item does for the cats, e.g. "Joy drops 15% slower", or null for looks-only items.
+function itemNote(item) {
+  if (item.slot === 'basic') return t(`need_${item.id}`);
+  if (!item.help) return null;
+  return Object.entries(item.help).map(([stat, n]) => t('helpLine', { stat: t(stat), n })).join(', ');
+}
+
+export function openShop(state, { onBuy, onEquip, onRepair }) {
+  const slots = ['basic', 'gear', 'furniture', 'decor', 'toy', 'hat', 'collar', 'wall', 'floor'];
   const keepScroll = sheet.open ? sheet.scrollTop : 0; // stay in place after buying
   const body = el('div', { class: 'list' });
   for (const slot of slots) {
     body.append(el('div', { class: 'section-title' }, t(`slot_${slot}`)));
     for (const item of SHOP_ITEMS.filter((i) => i.slot === slot)) {
       const owned = state.owned.includes(item.id);
+      const broken = (state.broken ?? []).includes(item.id);
       const inUse = wornItem(state, slot) === item.id;
       const worn = slot === 'hat' || slot === 'collar';
       let action;
-      if (!owned) {
+      if (broken) {
+        const price = repairPrice(item.id);
+        action = el('button', { class: 'btn small primary', type: 'button', disabled: state.coins < price ? '' : false, onclick: () => onRepair(item.id) }, t('repair'), priceTag(price));
+      } else if (!owned) {
         action = el('button', { class: 'btn small', type: 'button', disabled: state.coins < item.price ? '' : false, onclick: () => onBuy(item.id) }, priceTag(item.price));
       } else if (EQUIP_SLOTS.includes(slot)) {
         const label = worn ? (inUse ? 'wearing' : 'wear') : (inUse ? 'inUse' : 'use');
@@ -229,7 +242,8 @@ export function openShop(state, { onBuy, onEquip }) {
       }
       body.append(el('div', { class: 'row' },
         el('span', { class: 'icon' }, spriteCanvas(item.id, 4)),
-        el('span', { class: 'grow' }, t(`item_${item.id}`)),
+        el('span', { class: 'grow' }, t(`item_${item.id}`), broken ? el('span', { class: 'note' }, ` (${t('brokenItem')})`) : null,
+          itemNote(item) ? el('br') : null, itemNote(item) ? el('span', { class: 'note' }, itemNote(item)) : null),
         action,
       ));
     }
@@ -343,7 +357,11 @@ export function openAdopt(previewState, { lang, onLang, onAdopt, price = null })
   const preview = el('canvas', { class: 'preview', width: ROOM_W, height: ROOM_H });
   const input = el('input', { type: 'text', maxlength: '16', placeholder: t('adoptPlaceholder'), 'aria-label': t('adoptPrompt'), enterkeyhint: 'done' });
   const submit = () => onAdopt(input.value.trim() || t('defaultName'));
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  input.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault(); // otherwise the same key press also taps the button in the next sheet
+    submit();
+  });
 
   let raf = 0;
   const loop = (now) => {
@@ -375,7 +393,7 @@ export function openGamePicker(onPick) {
     el('span', { class: 'icon' }, spriteCanvas(game.icon, 4)),
     el('span', { class: 'grow' }, el('b', {}, t(`game_${kind}`)), el('br'), el('span', { class: 'note' }, t(`gameHelp_${kind}`))),
   ));
-  openSheet(t('gameTitle'), el('div', { class: 'list' }, ...rows));
+  openSheet(t('gamePickTitle'), el('div', { class: 'list' }, ...rows));
 }
 
 // Runs one mini game. onFinish.onEnd(score) returns the coins paid.

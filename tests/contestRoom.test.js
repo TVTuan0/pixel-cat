@@ -11,7 +11,8 @@ function decoratedState() {
   const s = createState('Mochi', T0 - 8 * DAY, 'en', 'calico');
   s.cats.push({ ...newCat(2, 'Mun', 'black', T0 - DAY), equipped: { hat: 'hat_bow', collar: null } });
   s.cats[0].equipped = { hat: 'hat_crown', collar: 'collar_red' };
-  s.owned = ['hat_crown', 'hat_bow', 'collar_red', 'decor_rug', 'toy_yarn', 'wall_mint'];
+  s.owned = ['hat_crown', 'hat_bow', 'collar_red', 'bowl', 'sofa', 'decor_rug', 'toy_yarn', 'wall_mint'];
+  s.broken = ['sofa'];
   s.equipped = { wall: 'wall_mint', floor: null };
   return s;
 }
@@ -33,7 +34,8 @@ describe('entries', () => {
         { name: 'Mochi', fur: 'calico', stage: 'adult', hat: 'hat_crown', collar: 'collar_red' },
         { name: 'Mun', fur: 'black', stage: 'kitten', hat: 'hat_bow', collar: null },
       ],
-      decor: ['decor_rug', 'toy_yarn'],
+      decor: ['bowl', 'sofa', 'decor_rug', 'toy_yarn'],
+      broken: ['sofa'],
       wall: 'wall_mint',
       floor: null,
     });
@@ -42,7 +44,8 @@ describe('entries', () => {
       ['Mochi', 'calico', 'adult', 'hat_crown'],
       ['Mun', 'black', 'kitten', 'hat_bow'],
     ]);
-    expect(scene.owned).toEqual(['decor_rug', 'toy_yarn']);
+    expect(scene.owned).toEqual(['bowl', 'sofa', 'decor_rug', 'toy_yarn']);
+    expect(scene.broken).toEqual(['sofa']);
     expect(scene.equipped).toEqual({ wall: 'wall_mint', floor: null });
     expect(scene.asleep).toBe(false);
   });
@@ -50,6 +53,12 @@ describe('entries', () => {
   it('accepts a good entry as is', () => {
     const entry = buildEntry(decoratedState(), T0);
     expect(cleanEntry(entry)).toEqual(entry);
+  });
+
+  it('keeps only broken items that are in the room', () => {
+    const good = buildEntry(decoratedState(), T0);
+    expect(cleanEntry({ ...good, broken: ['sofa', 'lamp', 'hat_bow'] }).broken).toEqual(['sofa']);
+    expect(cleanEntry({ ...good, broken: undefined }).broken).toEqual([]);
   });
 
   it('rejects entries with unknown or missing parts', () => {
