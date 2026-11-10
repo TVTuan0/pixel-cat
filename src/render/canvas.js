@@ -3,7 +3,7 @@ import { CAT_SIZES, FURS, drawSprite } from './sprites.js';
 import { drawRoom, drawDarkness } from './room.js';
 import { drawFrontCat, drawSideCat, FACES } from './cat.js';
 import { createWalker } from './walker.js';
-import { SPOTS, START_SPOTS, SLEEP_SPOTS, scratchPoint } from './layout.js';
+import { SPOTS, START_SPOTS, SLEEP_SPOTS, PRESENT_SPOTS, scratchPoint } from './layout.js';
 import { pickBehavior } from './behavior.js';
 import { active, playEffect, stopEffect, remaining } from './effects.js';
 import { moodOf, stageOf, usableItems } from '../rules.js';
@@ -31,6 +31,24 @@ export function playCatEffect(name, id, ms, now = performance.now()) {
   playEffect(fx(name, id), ms, now);
 }
 export { playEffect };
+
+// The present under a tap (its index in state.presents), or null. Generous, since presents are tiny.
+export function presentAt(state, x, y) {
+  const index = (state.presents ?? []).findIndex((p) => {
+    const spot = PRESENT_SPOTS[p.spot];
+    return x >= spot.x - 4 && x <= spot.x + 11 && y >= spot.y - 5 && y <= spot.y + 9;
+  });
+  return index === -1 ? null : index;
+}
+
+// Presents on the floor, with a little twinkle so they get noticed.
+function drawPresents(ctx, state, now) {
+  for (const [i, p] of (state.presents ?? []).entries()) {
+    const spot = PRESENT_SPOTS[p.spot];
+    drawSprite(ctx, `present_${p.look}`, spot.x, spot.y);
+    if ((Math.floor(now / 700) + i) % 3 === 0) drawSprite(ctx, 'sparkle', spot.x + 5, spot.y - 4);
+  }
+}
 
 // The cat under a tap, front-most first, or null.
 export function catAt(x, y) {
@@ -194,6 +212,7 @@ function posesFor(state, live, now) {
 export function drawScene(ctx, state, now, clock = Date.now(), { live = false, marker = live } = {}) {
   ctx.imageSmoothingEnabled = false;
   drawRoom(ctx, state, now, clock);
+  if (!state.asleep) drawPresents(ctx, state, now);
 
   const poses = posesFor(state, live, now);
   const order = state.cats.map((cat, i) => ({ cat, pose: poses[i] })).sort((a, b) => a.pose.g - b.pose.g);

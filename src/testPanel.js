@@ -11,6 +11,7 @@ const angry = (s) => ({
 const jump = (s, ms) => ({
   ...s,
   lastSeen: s.lastSeen - ms,
+  nextPresentAt: s.nextPresentAt - ms,
   cats: s.cats.map((c) => ({ ...c, adoptedAt: c.adoptedAt - ms, nextBreakAt: c.nextBreakAt === null ? null : c.nextBreakAt - ms })),
 });
 

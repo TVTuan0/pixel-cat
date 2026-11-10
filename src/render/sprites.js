@@ -194,6 +194,14 @@ export const SPRITES = {
   anger: { colors: { r: '#e8384f' }, rows: ['rr.rr', 'r...r', '.....', 'r...r', 'rr.rr'] },
   zzz: { colors: { z: '#ffffff' }, rows: ['zzzz', '..z.', '.z..', 'zzzz'] },
   sparkle: { colors: { w: '#ffffff' }, rows: ['.w.', 'www', '.w.'] },
+  // Things a cat brings home.
+  present_leaf: { colors: { g: '#5cc96b', d: '#2e7d32' }, rows: ['....gg', '..gggg', '.ggdgg', 'ggdgg.', 'd.....'] },
+  present_feather: { colors: { w: '#ffffff', g: '#b9c3d6' }, rows: ['....www', '..wwwg.', '.wwgg..', 'g......'] },
+  present_sock: { colors: { r: '#e8384f', w: '#ffffff' }, rows: ['.www.', '.rrr.', '.rrr.', '.rrr.', 'rrrr.', 'wwww.'] },
+  present_box: {
+    colors: { b: '#5ab0ff', r: '#e8384f', y: '#ffd84a' },
+    rows: ['.y...y.', '..yry..', 'rrrrrrr', 'bbbrbbb', 'bbbrbbb', 'bbbrbbb', 'bbbrbbb'],
+  },
   coin: {
     colors: { o: '#b8860b', y: '#ffd23f', w: '#fff6c8' },
     rows: ['.oooo.', 'oywyyo', 'owyyyo', 'oyyyyo', 'oyyyyo', '.oooo.'],

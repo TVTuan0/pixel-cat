@@ -1,4 +1,4 @@
-import { SAVE_KEY, SAVE_VERSION, START_COINS } from './config.js';
+import { SAVE_KEY, SAVE_VERSION, START_COINS, PRESENT_EVERY_HOURS, HOUR } from './config.js';
 import { applyElapsed, newCat } from './rules.js';
 
 // counters: lifetime action counts; daily: today's task progress; stickers: sticker ids earned.
@@ -15,6 +15,8 @@ export function createState(name, now, lang, fur = 'orange') {
     owned: [],
     broken: [], // owned items an angry cat broke
     news: [], // things that happened while away, shown once: [{ cat, item }]
+    presents: [], // things the cats brought home, waiting on the floor
+    nextPresentAt: now + PRESENT_EVERY_HOURS * HOUR,
     equipped: { wall: null, floor: null },
     lastGiftDay: null,
     streak: 0,

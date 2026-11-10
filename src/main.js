@@ -3,12 +3,12 @@ import { createState, loadState, saveState, clearState } from './state.js';
 import {
   applyElapsed, feed, pet, clean, toggleSleep, canPlay, finishMiniGame,
   buy, equip, repair, claimDailyGift, stageOf, ageInDays, recordAction, claimTask, checkStickers,
-  selectCat, nextCatOffer, adoptCat, rewardContestEntry, claimContestPrize,
+  selectCat, selectedCat, nextCatOffer, adoptCat, rewardContestEntry, claimContestPrize, pickUpPresent,
 } from './rules.js';
 import { buildEntry } from './contestRoom.js';
 import { contestAvailable, getContestStatus, getDuel, sendVote, sendEntry } from './contest.js';
 import { FOODS, STICKERS, CLIP_SECONDS } from './config.js';
-import { drawScene, playEffect, playCatEffect, catAt, stepCats, feedCat, resetCats, scratchItem } from './render/canvas.js';
+import { drawScene, playEffect, playCatEffect, catAt, presentAt, stepCats, feedCat, resetCats, scratchItem } from './render/canvas.js';
 import { spriteCanvas } from './render/sprites.js';
 import { setSoundEnabled, sfx } from './sound.js';
 import { makeCard, shareCard, shareLink, shareFile } from './snapshot.js';
@@ -210,6 +210,8 @@ const handlers = {
   },
 
   tapRoom(x, y) {
+    const present = state && !state.asleep ? presentAt(state, x, y) : null;
+    if (present !== null) return pickUp(present);
     const id = state && catAt(x, y);
     if (!id) return;
     if (id !== state.selected) commit(selectCat(state, id));
@@ -394,9 +396,29 @@ async function checkEvents() {
   eventsRunning = false;
 }
 
+function pickUp(index) {
+  const r = pickUpPresent(state, index);
+  commit(r.state);
+  seenPresents = state.presents.length;
+  track('present');
+  sfx.coin();
+  const name = selectedCat(state).name;
+  if (r.present.item) say(t('presentItem', { name, item: t(`item_${r.present.item}`) }), 3000);
+  else say(t('presentCoins', { name, n: r.present.coins }), 2500);
+}
+
+// Says so when new presents have arrived (also right after the game opens).
+let seenPresents = 0;
+function notePresents() {
+  const n = state.presents?.length ?? 0;
+  if (n > seenPresents && !state.asleep) say(t('presentsWaiting', { name: selectedCat(state).name, n }), 3500);
+  seenPresents = n;
+}
+
 function tick() {
   if (!state) return;
   state = applyElapsed(state, Date.now());
+  notePresents();
   renderHud(state, Date.now());
   awardStickers();
   checkEvents();

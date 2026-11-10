@@ -18,6 +18,9 @@ export const SPOTS = {
   right: { x: 124, g: 115, weight: 1 },
 };
 
+// Where presents the cats bring home lie on the floor (top-left corner of each), by present spot number.
+export const PRESENT_SPOTS = [{ x: 8, y: 110 }, { x: 104, y: 111 }, { x: 52, y: 112 }];
+
 // A spot is "up high" when the cat must jump to reach it.
 export const isHigh = (g) => g < FLOOR_G - 15;
 

@@ -100,6 +100,14 @@ export const ITCHY_BELOW = 40; // below this cleanliness a cat scratches itself 
 export const BREAK_EVERY_MINUTES = 5; // an angry cat breaks one more item this often
 export const REPAIR_SHARE = 0.5; // repairs cost this share of the price
 
+// Presents: while the player is away, a calm cat brings something home every few hours.
+export const PRESENT_EVERY_HOURS = 3;
+export const MAX_PRESENTS = 3; // waiting on the floor at once
+export const PRESENT_COINS = { min: 3, max: 8 };
+export const PRESENT_BOX_CHANCE = 0.1; // sometimes a gift box with an item instead of coins
+export const PRESENT_ITEMS = ['toy_mouse', 'toy_yarn', 'decor_plant']; // what a gift box can hold
+export const PRESENT_LOOKS = ['leaf', 'feather', 'sock'];
+
 // The public link shown on cards and in invites (the game may also run on other sites, like itch.io).
 export const SITE_URL = 'https://pixel-cat-green.vercel.app';
 

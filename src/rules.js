@@ -7,6 +7,7 @@ import {
   GIFT_STREAK_BONUS, GIFT_STREAK_CAP, FOODS, SHOP_ITEMS, WEATHER_CHANCE,
   TASKS, TASKS_PER_DAY, STICKERS, LUNAR_DATES, MAX_CATS, NEW_CAT_PRICES, NEW_CAT_NEEDS_STAGE,
   CONTEST_ENTRY_COINS, CONTEST_PRIZES, MAX_HELP, BREAKABLE_SLOTS, ANGRY_BELOW, BREAK_EVERY_MINUTES, REPAIR_SHARE,
+  PRESENT_EVERY_HOURS, MAX_PRESENTS, PRESENT_COINS, PRESENT_BOX_CHANCE, PRESENT_ITEMS, PRESENT_LOOKS,
 } from './config.js';
 
 const clamp = (v) => Math.max(0, Math.min(100, v));
@@ -104,14 +105,57 @@ function breakableItems(state) {
   return SHOP_ITEMS.filter((i) => BREAKABLE_SLOTS.includes(i.slot) && usable.includes(i.id)).map((i) => i.id);
 }
 
+const isAngry = (cat) => Object.values(cat.stats).some((v) => v < ANGRY_BELOW);
+
+// One present, on a free spot on the floor. `spot` is 0 to MAX_PRESENTS - 1; the room decides where that is.
+function makePresent(state, presents, random) {
+  const used = presents.map((p) => p.spot);
+  const spot = [...Array(MAX_PRESENTS).keys()].find((i) => !used.includes(i));
+  if (random() < PRESENT_BOX_CHANCE) {
+    const coming = presents.map((p) => p.item);
+    const items = PRESENT_ITEMS.filter((id) => !state.owned.includes(id) && !coming.includes(id));
+    if (items.length) return { spot, look: 'box', item: items[Math.floor(random() * items.length)] };
+  }
+  const coins = PRESENT_COINS.min + Math.floor(random() * (PRESENT_COINS.max - PRESENT_COINS.min + 1));
+  return { spot, look: PRESENT_LOOKS[Math.floor(random() * PRESENT_LOOKS.length)], coins };
+}
+
+// Every PRESENT_EVERY_HOURS a present arrives, unless a cat is angry or the floor already holds MAX_PRESENTS.
+// When the floor is full the clock waits, so the next one comes a while after the player picks one up.
+function bringPresents(state, now, random) {
+  const every = PRESENT_EVERY_HOURS * HOUR;
+  let presents = state.presents ?? [];
+  let next = state.nextPresentAt ?? state.lastSeen + every;
+  const angry = state.cats.some(isAngry);
+  while (next <= now) {
+    if (presents.length >= MAX_PRESENTS) {
+      next = now + every;
+      break;
+    }
+    if (!angry) presents = [...presents, makePresent(state, presents, random)];
+    next += every;
+  }
+  return { ...state, presents, nextPresentAt: next };
+}
+
+// Picks up the present at `index`: its coins, or the item in a gift box.
+export function pickUpPresent(state, index) {
+  const present = (state.presents ?? [])[index];
+  if (!present) return { state, present: null };
+  const presents = state.presents.filter((_, i) => i !== index);
+  const owned = present.item && !state.owned.includes(present.item) ? [...state.owned, present.item] : state.owned;
+  return { state: { ...state, presents, owned, coins: state.coins + (present.coins ?? 0) }, present };
+}
+
 export function applyElapsed(state, now, random = Math.random) {
   const hours = Math.max(0, now - state.lastSeen) / HOUR;
   const perHour = changePerHour(state);
   const cats = state.cats.map((cat) => withStats(cat, Object.fromEntries(
     Object.entries(perHour).map(([stat, change]) => [stat, change * hours]),
   )));
-  const caughtUp = breakThings({ ...state, cats }, state, perHour, Math.max(now, state.lastSeen), random);
-  return { ...caughtUp, lastSeen: Math.max(now, state.lastSeen) };
+  const later = Math.max(now, state.lastSeen);
+  const caughtUp = bringPresents(breakThings({ ...state, cats }, state, perHour, later, random), later, random);
+  return { ...caughtUp, lastSeen: later };
 }
 
 export const repairPrice = (itemId) => Math.ceil(SHOP_ITEMS.find((i) => i.id === itemId).price * REPAIR_SHARE);
