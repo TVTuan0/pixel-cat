@@ -1,3 +1,5 @@
+import { F } from './fine.js';
+
 // Small pixel sprites as text grids. One character = one color, '.' = empty.
 
 const FACE_COLORS = { pink: '#ff8fa3', eye: '#2a1d1d', white: '#ffffff', blush: '#ffb3c1' };
@@ -405,7 +407,8 @@ export const SPRITES = {
 
 SPRITES.food_fish = SPRITES.fish;
 
-// A sprite's size in room units. Sprites with `cell: 0.5` are drawn at half-unit detail.
+// A sprite's size in room units. Sprites with `cell: 0.5` are laid out at half-unit detail, then painted on the
+// chunky grid like the rest of the art (see fine.js).
 export function spriteSize(name) {
   const s = SPRITES[name];
   const cell = s.cell ?? 1;
@@ -419,8 +422,13 @@ export function drawSprite(ctx, name, x, y, flip = false) {
     for (let rx = 0; rx < row.length; rx++) {
       const color = colors[row[rx]];
       if (!color) continue;
+      const col = flip ? w - 1 - rx : rx;
+      if (cell < 1) {
+        F(ctx, Math.round(x * 2) + col, Math.round(y * 2) + ry, 1, 1, color);
+        continue;
+      }
       ctx.fillStyle = color;
-      ctx.fillRect(x + (flip ? w - 1 - rx : rx) * cell, y + ry * cell, cell, cell);
+      ctx.fillRect(x + col, y + ry, 1, 1);
     }
   });
 }

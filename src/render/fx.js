@@ -25,7 +25,7 @@ const playing = [];
 // Effects that run for a long time (weather, butterflies, birds), by name, so each starts once.
 const ambient = new Map();
 
-let frame = null, image = null, layer = null;
+let frame = null, image = null, layer = null, chunky = null;
 function surfaces() {
   if (!frame) {
     frame = createFrame(SCENE_W, SCENE_H);
@@ -33,6 +33,10 @@ function surfaces() {
     layer = document.createElement('canvas');
     layer.width = SCENE_W;
     layer.height = SCENE_H;
+    // Effects are shown at half size, then blown up, so their pixels match the chunky 8-bit art.
+    chunky = document.createElement('canvas');
+    chunky.width = SCENE_W / RES;
+    chunky.height = SCENE_H / RES;
   }
   return layer.getContext('2d');
 }
@@ -91,9 +95,13 @@ export function drawFx(ctx, view, front) {
   }
   composite(frame, image.data, null);
   out.putImageData(image, 0, 0);
+  const small = chunky.getContext('2d');
+  small.imageSmoothingEnabled = false;
+  small.clearRect(0, 0, chunky.width, chunky.height);
+  small.drawImage(layer, 0, 0, chunky.width, chunky.height);
   ctx.save();
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.drawImage(layer, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(chunky, 0, 0);
   ctx.restore();
 }
 

@@ -1,10 +1,20 @@
-// Drawing helpers for double-resolution art. Coordinates are in fine pixels (half a room unit);
-// the canvas is already scaled so one room unit = 2 screen pixels.
+// Drawing helpers. Art is laid out in fine pixels (half a room unit) but painted on the chunky 8-bit grid,
+// one pixel per room unit: each block snaps to whole units, and a thin line still keeps one unit,
+// so outlines and small details survive. The canvas is already scaled to room units.
+
+// A fine-pixel span [a, a + n) snapped to whole room units: [start, length], at least one unit long.
+function snap(a, n) {
+  const start = Math.round(a / 2);
+  return [start, Math.max(1, Math.round((a + n) / 2) - start)];
+}
 
 // A block of fine pixels.
 export function F(ctx, x, y, w, h, color) {
+  if (w <= 0 || h <= 0) return;
+  const [sx, sw] = snap(x, w);
+  const [sy, sh] = snap(y, h);
   ctx.fillStyle = color;
-  ctx.fillRect(x / 2, y / 2, w / 2, h / 2);
+  ctx.fillRect(sx, sy, sw, sh);
 }
 
 // The rows of a rounded shape (a "squircle"): [left, right, y] per row. Higher `round` = boxier.
@@ -26,7 +36,12 @@ export function fineShape(ctx, x, y, w, h, fill, outline, { round = 3, inside = 
   if (!inside) return;
   ctx.save();
   ctx.beginPath();
-  for (const [l, r, row] of inner) ctx.rect(l / 2, row / 2, (r - l) / 2, 0.5);
+  for (const [l, r, row] of inner) {
+    if (r <= l) continue;
+    const [sx, sw] = snap(l, r - l);
+    const [sy, sh] = snap(row, 1);
+    ctx.rect(sx, sy, sw, sh);
+  }
   ctx.clip();
   inside();
   ctx.restore();
