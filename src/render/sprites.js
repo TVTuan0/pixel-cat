@@ -172,6 +172,23 @@ export const SPRITES = {
     colors: { y: '#ffd27f', o: '#8a5a2a', g: '#4a4a5a' },
     rows: ['..yyyy..', '.yyyyyy.', 'yyyyyyyy', 'oooooooo', '...gg...', '...gg...', '...gg...', '...gg...', '.gggggg.'],
   },
+  // Icons for the four stats in the top bar.
+  stat_hunger: {
+    colors: { o: '#2a6a9a', b: '#6cc3ff', k: '#1a1a2e' },
+    rows: ['..ooo...', '.obbbo.o', 'obkbbboo', 'obbbbbbo', 'obbbbboo', '.obbbo.o', '..ooo...'],
+  },
+  stat_happiness: {
+    colors: { r: '#ff4d6d', w: '#ffffff' },
+    rows: ['.rr.rr.', 'rwrrrrr', 'rrrrrrr', '.rrrrr.', '..rrr..', '...r...'],
+  },
+  stat_energy: {
+    colors: { y: '#ffd84a' },
+    rows: ['...yyy', '..yyy.', '.yyy..', 'yyyyyy', '..yyy.', '.yyy..', '.yy...', 'y.....'],
+  },
+  stat_cleanliness: {
+    colors: { b: '#5ab0ff', w: '#ffffff' },
+    rows: ['...b...', '..bbb..', '.bbbbb.', 'bbwbbbb', 'bwbbbbb', 'bbbbbbb', '.bbbbb.', '..bbb..'],
+  },
   heart: { colors: { r: '#ff4d6d' }, rows: ['.r.r.', 'rrrrr', '.rrr.', '..r..'] },
   bug: { colors: { k: '#2a1d1d', l: '#7a6a85' }, rows: ['l.l', 'kkk', '.k.'] },
   anger: { colors: { r: '#e8384f' }, rows: ['rr.rr', 'r...r', '.....', 'r...r', 'rr.rr'] },

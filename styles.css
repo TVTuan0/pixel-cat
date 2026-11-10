@@ -86,7 +86,7 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
   color: var(--panel);
 }
 .stat { display: flex; align-items: center; gap: 8px; font-size: 20px; }
-.stat-label { width: 54px; flex-shrink: 0; }
+.stat-label { width: 24px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .bar {
   flex: 1; height: 12px; background: #1b1530;
   border: 2px solid #5a4a85; border-radius: 3px; overflow: hidden;

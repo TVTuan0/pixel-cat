@@ -54,7 +54,7 @@ export function initUI(handlers) {
 
   $('stats').replaceChildren(
     ...STAT_KEYS.map((key) =>
-      el('div', { class: 'stat' }, el('span', { class: 'stat-label', id: `label-${key}` }), el('div', { class: 'bar', id: `bar-${key}` }, el('i'))),
+      el('div', { class: 'stat' }, el('span', { class: 'stat-label', id: `label-${key}` }, spriteCanvas(`stat_${key}`, 3)), el('div', { class: 'bar', id: `bar-${key}` }, el('i'))),
     ),
   );
 
@@ -142,7 +142,7 @@ export function renderHud(state, now) {
 
   for (const key of STAT_KEYS) {
     const value = Math.round(cat.stats[key]);
-    $(`label-${key}`).textContent = t(key);
+    $(`label-${key}`).title = t(key); // the icon's name, shown on hover; the bar below is read out with its name
     const bar = $(`bar-${key}`);
     bar.classList.toggle('low', value < 25);
     bar.setAttribute('aria-label', `${t(key)} ${value}%`);
