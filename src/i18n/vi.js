@@ -40,6 +40,8 @@ export default {
 
   feedOk: 'Ngon quá!',
   feedFull: 'No rồi!',
+  noBowl: 'Hãy mua bát ăn trong cửa hàng trước nhé.',
+  noLitter: 'Hãy mua khay cát trong cửa hàng trước nhé.',
   poor: 'Không đủ xu.',
   asleep: 'Suỵt, mèo đang ngủ.',
   petOk: 'Rừ rừ...',
@@ -49,10 +51,16 @@ export default {
   bought: 'Đã mua!',
 
   gameTitle: 'Bắt Cá',
-  gameHelp: 'Kéo hoặc chạm để di chuyển giỏ. Bắt cá nào!',
+  game_fish: 'Bắt cá',
+  game_mouse: 'Bắt chuột',
+  gameHelp_fish: 'Kéo hoặc chạm để di chuyển giỏ. Bắt cá nào!',
+  gameHelp_mouse: 'Chạm vào chuột trước khi nó trốn. Chuột vàng được 3 điểm. Đừng chạm cuộn len!',
+  gameOver_fish: 'Bạn bắt được {n} con cá!',
+  gameOver_mouse: 'Bạn được {n} điểm!',
+  task_mouse10: 'Bắt 10 con chuột',
+  sticker_mouse_catcher: 'Thợ săn chuột (50 chuột)',
   gameStart: 'Bắt đầu',
   gameTime: '{n}s',
-  gameOver: 'Bạn bắt được {n} con cá!',
   gameReward: '+{n} xu',
 
   shopTitle: 'Cửa hàng',

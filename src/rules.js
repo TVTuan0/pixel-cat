@@ -219,12 +219,13 @@ export function canPlay(state) {
   return 'ok';
 }
 
-export function finishFishGame(state, caught) {
+// After Fish Catch or Mouse Catch: the score is paid in coins.
+export function finishMiniGame(state, coins) {
   const played = updateCat(state, (c) => withStats(c, {
-    happiness: Math.min(30, 10 + caught * 2),
+    happiness: Math.min(30, 10 + coins * 2),
     energy: -PLAY_ENERGY_COST,
   }));
-  return { state: { ...played, coins: state.coins + caught }, result: 'ok' };
+  return { state: { ...played, coins: state.coins + coins }, result: 'ok' };
 }
 
 // Puts an item on: a hat or collar on the selected cat, or a wallpaper or floor on the room.

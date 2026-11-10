@@ -5,7 +5,8 @@ import { spriteCanvas, FURS } from './render/sprites.js';
 import { drawScene, ROOM_W, ROOM_H } from './render/canvas.js';
 import { entryToScene } from './contestRoom.js';
 import { runFishGame, drawFishGameIdle } from './minigame/fish.js';
-import { FOODS, SHOP_ITEMS, FISH_GAME_SECONDS, EQUIP_SLOTS, STICKERS, CONTEST_ENTRY_COINS, DAY } from './config.js';
+import { runMouseGame, drawMouseGameIdle } from './minigame/mouse.js';
+import { FOODS, SHOP_ITEMS, FISH_GAME_SECONDS, MOUSE_GAME_SECONDS, EQUIP_SLOTS, STICKERS, CONTEST_ENTRY_COINS, DAY } from './config.js';
 import { ageInDays, stageOf, dailyTasks, taskProgress, selectedCat, needsCare, wornItem, nextCatOffer } from './rules.js';
 
 const $ = (id) => document.getElementById(id);
@@ -363,11 +364,27 @@ export function openAdopt(previewState, { lang, onLang, onAdopt, price = null })
   openSheet(t(price === null ? 'adoptTitle' : 'newCatTitle'), body, { locked: price === null, onClose: () => cancelAnimationFrame(raf) });
 }
 
-export function openFishGame(onFinish) {
+const MINI_GAMES = {
+  fish: { run: runFishGame, idle: drawFishGameIdle, seconds: FISH_GAME_SECONDS, icon: 'fish' },
+  mouse: { run: runMouseGame, idle: drawMouseGameIdle, seconds: MOUSE_GAME_SECONDS, icon: 'toy_mouse' },
+};
+
+// Lets the player pick a mini game.
+export function openGamePicker(onPick) {
+  const rows = Object.entries(MINI_GAMES).map(([kind, game]) => el('button', { class: 'row btn', type: 'button', onclick: () => onPick(kind) },
+    el('span', { class: 'icon' }, spriteCanvas(game.icon, 4)),
+    el('span', { class: 'grow' }, el('b', {}, t(`game_${kind}`)), el('br'), el('span', { class: 'note' }, t(`gameHelp_${kind}`))),
+  ));
+  openSheet(t('gameTitle'), el('div', { class: 'list' }, ...rows));
+}
+
+// Runs one mini game. onFinish.onEnd(score) returns the coins paid.
+export function openMiniGame(kind, onFinish) {
+  const game = MINI_GAMES[kind];
   const canvas = el('canvas', { class: 'game-canvas' });
-  const timer = el('span', {}, t('gameTime', { n: FISH_GAME_SECONDS }));
+  const timer = el('span', {}, t('gameTime', { n: game.seconds }));
   const score = el('span', {}, '0');
-  const help = el('p', { class: 'note' }, t('gameHelp'));
+  const help = el('p', { class: 'note' }, t(`gameHelp_${kind}`));
   const start = el('button', { class: 'btn primary', type: 'button' }, t('gameStart'));
   let stop = null;
   let finished = false;
@@ -375,15 +392,15 @@ export function openFishGame(onFinish) {
   start.addEventListener('click', () => {
     start.hidden = true;
     help.hidden = true;
-    stop = runFishGame(canvas, {
-      seconds: FISH_GAME_SECONDS,
+    stop = game.run(canvas, {
+      seconds: game.seconds,
       onTick: (s) => { timer.textContent = t('gameTime', { n: s }); },
       onCatch: (n) => { score.textContent = String(n); onFinish.onCatch?.(); },
-      onEnd: (caught) => {
+      onEnd: (points) => {
         finished = true;
-        const reward = onFinish.onEnd(caught);
+        const reward = onFinish.onEnd(points);
         const done = el('div', { class: 'list center' },
-          el('p', {}, t('gameOver', { n: caught })),
+          el('p', {}, t(`gameOver_${kind}`, { n: points })),
           el('p', {}, t('gameReward', { n: reward })),
           el('button', { class: 'btn primary', type: 'button', onclick: closeSheet }, t('ok')),
         );
@@ -392,15 +409,15 @@ export function openFishGame(onFinish) {
     });
   });
 
-  drawFishGameIdle(canvas);
+  game.idle(canvas);
   const body = el('div', { class: 'list' },
-    el('div', { class: 'game-hud' }, timer, el('span', { class: 'price' }, spriteCanvas('fish', 3), score)),
+    el('div', { class: 'game-hud' }, timer, el('span', { class: 'price' }, spriteCanvas(game.icon, 3), score)),
     el('div', { class: 'game-wrap' }, canvas),
     help,
     start,
   );
   // Closing the sheet mid-game stops it; nothing is earned.
-  openSheet(t('gameTitle'), body, { onClose: () => { if (!finished) stop?.(); } });
+  openSheet(t(`game_${kind}`), body, { onClose: () => { if (!finished) stop?.(); } });
 }
 
 // A simple message sheet. `extra` adds a second button, e.g. { label, onClick }. Resolves when it closes.

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createState } from '../src/state.js';
 import {
   applyElapsed, moodOf, stageOf, dayKey, feed, pet, clean, toggleSleep,
-  finishFishGame, buy, equip, claimDailyGift, weatherOf, selectedCat, selectCat, nextCatOffer, adoptCat, newCat,
+  finishMiniGame, buy, equip, claimDailyGift, weatherOf, selectedCat, selectCat, nextCatOffer, adoptCat, newCat,
 } from '../src/rules.js';
 import { HOUR, DAY, FOODS, START_COINS, NEW_CAT_PRICES, MAX_CATS } from '../src/config.js';
 
@@ -127,9 +127,9 @@ describe('toggleSleep', () => {
   });
 });
 
-describe('finishFishGame', () => {
+describe('finishMiniGame', () => {
   it('pays coins per fish and costs energy', () => {
-    const { state, result } = finishFishGame(withStats({ happiness: 40, energy: 60 }, { coins: 0 }), 6);
+    const { state, result } = finishMiniGame(withStats({ happiness: 40, energy: 60 }, { coins: 0 }), 6);
     expect(result).toBe('ok');
     expect(state.coins).toBe(6);
     expect(cat(state).stats.happiness).toBeGreaterThan(40);

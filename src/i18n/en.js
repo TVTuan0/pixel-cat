@@ -40,6 +40,8 @@ export default {
 
   feedOk: 'Yum!',
   feedFull: "I'm full!",
+  noBowl: 'Buy a food bowl in the shop first.',
+  noLitter: 'Buy a litter box in the shop first.',
   poor: 'Not enough coins.',
   asleep: 'Shh, sleeping.',
   petOk: 'Purrr...',
@@ -49,10 +51,16 @@ export default {
   bought: 'Bought!',
 
   gameTitle: 'Fish Catch',
-  gameHelp: 'Drag or tap to move the basket. Catch the fish!',
+  game_fish: 'Fish Catch',
+  game_mouse: 'Mouse Catch',
+  gameHelp_fish: 'Drag or tap to move the basket. Catch the fish!',
+  gameHelp_mouse: 'Tap the mice before they hide. Golden mice are worth 3. Do not tap the yarn!',
+  gameOver_fish: 'You caught {n} fish!',
+  gameOver_mouse: 'You scored {n}!',
+  task_mouse10: 'Catch 10 mice',
+  sticker_mouse_catcher: 'Mouse hunter (50 mice)',
   gameStart: 'Start',
   gameTime: '{n}s',
-  gameOver: 'You caught {n} fish!',
   gameReward: '+{n} coins',
 
   shopTitle: 'Shop',

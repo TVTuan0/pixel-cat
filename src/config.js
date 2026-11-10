@@ -37,6 +37,7 @@ export const CLEAN_COINS = 2;
 export const PLAY_MIN_ENERGY = 15;
 export const PLAY_ENERGY_COST = 10;
 export const FISH_GAME_SECONDS = 30;
+export const MOUSE_GAME_SECONDS = 30;
 
 export const GIFT_BASE_COINS = 5;
 export const GIFT_STREAK_BONUS = 2; // per streak day, up to a week
@@ -109,6 +110,7 @@ export const TASKS = [
   { id: 'clean1', counter: 'clean', goal: 1, coins: 2 },
   { id: 'play1', counter: 'play', goal: 1, coins: 3 },
   { id: 'fish10', counter: 'fish', goal: 10, coins: 5 },
+  { id: 'mouse10', counter: 'mouse', goal: 10, coins: 5 },
 ];
 export const TASKS_PER_DAY = 3;
 
@@ -118,6 +120,7 @@ export const STICKERS = [
   { id: 'best_friends', kind: 'counter', counter: 'pet', goal: 50, coins: 10, icon: 'heart' },
   { id: 'fisher', kind: 'counter', counter: 'fish', goal: 50, coins: 10, icon: 'fish' },
   { id: 'master_fisher', kind: 'counter', counter: 'fish', goal: 300, coins: 25, icon: 'goldfish' },
+  { id: 'mouse_catcher', kind: 'counter', counter: 'mouse', goal: 50, coins: 10, icon: 'toy_mouse' },
   { id: 'tidy', kind: 'counter', counter: 'clean', goal: 10, coins: 10, icon: 'broom' },
   { id: 'task_star', kind: 'counter', counter: 'tasks', goal: 10, coins: 15, icon: 'sparkle' },
   { id: 'streak3', kind: 'streak', goal: 3, coins: 10, icon: 'sun' },

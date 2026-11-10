@@ -1,7 +1,7 @@
 import { t, setLanguage, guessLanguage } from './i18n/index.js';
 import { createState, loadState, saveState, clearState } from './state.js';
 import {
-  applyElapsed, feed, pet, clean, toggleSleep, canPlay, finishFishGame,
+  applyElapsed, feed, pet, clean, toggleSleep, canPlay, finishMiniGame,
   buy, equip, claimDailyGift, stageOf, ageInDays, recordAction, claimTask, checkStickers,
   selectCat, nextCatOffer, adoptCat, rewardContestEntry, claimContestPrize,
 } from './rules.js';
@@ -17,7 +17,7 @@ import { startAnalytics, track } from './analytics.js';
 import { startInstallSupport, installState, promptInstall } from './install.js';
 import {
   initUI, renderHud, say, showMood, closeSheet, isSheetOpen, openFeed, openShop,
-  openSettings, openAdopt, openFishGame, showMessage, catPreview, openTasks, openShareChoice, openContest, openDuel,
+  openSettings, openAdopt, openGamePicker, openMiniGame, showMessage, catPreview, openTasks, openShareChoice, openContest, openDuel,
 } from './ui.js';
 
 const storage = (() => {
@@ -60,6 +60,7 @@ function result(text, sound) {
 const handlers = {
   feed() {
     if (state.asleep) return result(t('asleep'), sfx.no);
+    if (!state.owned.includes('bowl')) return result(t('noBowl'), sfx.no);
     openFeed(state, (foodId) => {
       const r = feed(state, foodId);
       if (r.result === 'poor') return result(t('poor'), sfx.no);
@@ -76,21 +77,22 @@ const handlers = {
   play() {
     const check = canPlay(state);
     if (check !== 'ok') return result(t(check), sfx.no);
-    openFishGame({
+    openGamePicker((kind) => openMiniGame(kind, {
       onCatch: sfx.catch,
-      onEnd: (caught) => {
-        commit(finishFishGame(state, caught).state);
-        record(['play', 1], ['fish', caught]);
-        track('fish_game');
+      onEnd: (points) => {
+        commit(finishMiniGame(state, points).state);
+        record(['play', 1], [kind, points]);
+        track(`${kind}_game`);
         sfx.coin();
         playCatEffect('hop', state.selected, 500);
-        return caught;
+        return points;
       },
-    });
+    }));
   },
 
   clean() {
     const r = clean(state);
+    if (r.result === 'noLitter') return result(t('noLitter'), sfx.no);
     commit(r.state);
     playEffect('sparkle', 1200);
     result(r.coins ? t('cleanCoins', { n: r.coins }) : t('cleanOk'), sfx.clean);
