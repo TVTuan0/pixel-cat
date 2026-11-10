@@ -5,7 +5,7 @@ import { drawFrontCat, drawSideCat, FACES } from './cat.js';
 import { createWalker } from './walker.js';
 import { SPOTS, START_SPOTS, SLEEP_SPOTS } from './layout.js';
 import { active, playEffect, stopEffect, remaining } from './effects.js';
-import { moodOf, stageOf } from '../rules.js';
+import { moodOf, stageOf, usableItems } from '../rules.js';
 
 export { ROOM_W, ROOM_H } from './layout.js';
 
@@ -30,15 +30,16 @@ export function catAt(x, y) {
   return null;
 }
 
-// Where each cat curls up at night: the bed first, then other cozy places the room has.
-function sleepSpots(owned) {
-  return SLEEP_SPOTS.filter((name) => !SPOTS[name].needs || owned.includes(SPOTS[name].needs));
+// Where each cat curls up at night: the bed first, then other cozy places the room has (and that aren't broken).
+function sleepSpots(state) {
+  const usable = usableItems(state);
+  return SLEEP_SPOTS.filter((name) => !SPOTS[name].needs || usable.includes(SPOTS[name].needs));
 }
 
 export function resetCats(state) {
   walkers.clear();
   const now = performance.now();
-  const night = sleepSpots(state.owned);
+  const night = sleepSpots(state);
   state.cats.forEach((cat, i) => walkers.set(cat.id, createWalker(state.asleep ? night[i] : START_SPOTS[i], now)));
 }
 
@@ -70,7 +71,7 @@ function pickIdle(state, cat, now) {
 export function stepCats(state, now) {
   const dt = lastFrame === null ? 0 : Math.min(0.1, (now - lastFrame) / 1000);
   lastFrame = now;
-  const night = sleepSpots(state.owned);
+  const night = sleepSpots(state);
   state.cats.forEach((cat, i) => {
     const walker = walkerFor(cat, now);
     if (state.asleep) {
@@ -79,7 +80,7 @@ export function stepCats(state, now) {
       walker.restFor(3000, now);
     } else {
       const taken = state.cats.filter((c) => c.id !== cat.id).map((c) => walkerFor(c, now).target());
-      walker.wander(state.owned, now, taken);
+      walker.wander(usableItems(state), now, taken);
     }
     walker.update(dt, now);
     if (walker.pose().mode === 'sit') pickIdle(state, cat, now);

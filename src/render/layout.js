@@ -9,8 +9,8 @@ export const SPOTS = {
   center: { x: 80, g: FLOOR_G, weight: 1 },
   bed: { x: 34, g: FLOOR_G, weight: 1 },
   bowl: { x: 66, g: FLOOR_G, weight: 0 },
-  sofa: { x: 72, g: 70, base: 72, weight: 2 },
-  tree: { x: 16, g: 46, base: 24, weight: 2 },
+  sofa: { x: 72, g: 70, base: 72, weight: 2, needs: 'sofa' },
+  tree: { x: 16, g: 46, base: 24, weight: 2, needs: 'cat_tree' },
   fishbowl: { x: 111, g: 104, weight: 2, needs: 'decor_fishbowl' },
   beanbag: { x: 102, g: 101, weight: 2, needs: 'decor_beanbag' },
   yarn: { x: 92, g: 112, weight: 2, needs: 'toy_yarn' },
@@ -21,6 +21,7 @@ export const SPOTS = {
 // A spot is "up high" when the cat must jump to reach it.
 export const isHigh = (g) => g < FLOOR_G - 15;
 
-// Where cats sit when the page opens, and where they curl up at night, in cat order.
-export const START_SPOTS = ['center', 'sofa', 'tree', 'right', 'front'];
-export const SLEEP_SPOTS = ['bed', 'sofa', 'beanbag', 'tree', 'front', 'right', 'center'];
+// Where cats sit when the page opens (spots that are always there, even in an empty room),
+// and where they curl up at night, in cat order. The last five sleep spots are always there.
+export const START_SPOTS = ['center', 'right', 'front', 'bed', 'bowl'];
+export const SLEEP_SPOTS = ['bed', 'sofa', 'beanbag', 'tree', 'front', 'right', 'center', 'bowl'];

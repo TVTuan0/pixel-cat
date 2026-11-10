@@ -6,14 +6,14 @@ import { ROOM_W, ROOM_H, FLOOR_Y } from './layout.js';
 import { weatherOf, seasonOf } from '../rules.js';
 
 const WALLS = {
-  default: { base: '#f6e7d0', accent: '#e8d2b0', pattern: 'dots' },
+  default: { base: '#ddd0b8', accent: '#cbbb9c', pattern: 'old' },
   wall_stripes: { base: '#ffe3ea', accent: '#ffd0dc', pattern: 'stripes' },
   wall_mint: { base: '#dff5e8', accent: '#9fd8b4', pattern: 'leaves' },
   wall_stars: { base: '#dfe9ff', accent: '#b9c9f5', pattern: 'stars' },
 };
 
 const FLOORS = {
-  default: { base: '#b9805a', line: '#a46e4a', pattern: 'planks' },
+  default: { base: '#a07e62', line: '#8c6b50', pattern: 'planks', worn: true },
   floor_dark: { base: '#6e4a3a', line: '#5a3a2c', pattern: 'planks' },
   floor_tiles: { base: '#f3ead8', line: '#9fd3c7', pattern: 'checker' },
   floor_carpet: { base: '#b49ad6', line: '#9a7fc0', pattern: 'speckle' },
@@ -27,7 +27,13 @@ const isNight = (hour) => hour >= 19 || hour < 6;
 function drawWall(ctx, style) {
   const w = WALLS[style ?? 'default'];
   rect(ctx, 0, 0, ROOM_W, FLOOR_Y, w.base);
-  if (w.pattern === 'dots') {
+  if (w.pattern === 'old') {
+    // Faded paint with cracks and water stains.
+    for (const [x, y, sw, sh] of [[8, 40, 10, 6], [92, 8, 8, 5], [118, 56, 12, 7]]) rect(ctx, x, y, sw, sh, w.accent);
+    for (const [x, y, steps] of [[44, 4, 9], [140, 20, 7], [6, 58, 6]]) {
+      for (let i = 0; i < steps; i++) rect(ctx, x + (i % 3 === 1 ? 1 : 0) + Math.floor(i / 3), y + i, 1, 1, '#a8987a');
+    }
+  } else if (w.pattern === 'dots') {
     for (let y = 4; y < FLOOR_Y - 4; y += 8) for (let x = (y / 8) % 2 ? 4 : 0; x < ROOM_W; x += 8) rect(ctx, x, y, 1, 1, w.accent);
   } else if (w.pattern === 'stripes') {
     for (let x = 0; x < ROOM_W; x += 10) rect(ctx, x, 0, 4, FLOOR_Y, w.accent);
@@ -56,6 +62,11 @@ function drawFloor(ctx, style) {
     for (let y = FLOOR_Y + 6, i = 0; y < ROOM_H; y += 7, i++) {
       rect(ctx, 0, y, ROOM_W, 1, f.line);
       for (let x = (i % 2) * 14 + 8; x < ROOM_W; x += 28) rect(ctx, x, y - 6, 1, 6, f.line);
+    }
+    if (f.worn) {
+      // Scuffs and a cracked board.
+      for (const [x, y, w] of [[30, 90, 6], [112, 96, 8], [70, 115, 5], [140, 84, 4]]) rect(ctx, x, y, w, 1, '#7a5c44');
+      for (let i = 0; i < 5; i++) rect(ctx, 96 + i, 80 + (i % 2), 1, 1, '#5e4634');
     }
   } else if (f.pattern === 'checker') {
     for (let y = FLOOR_Y, r = 0; y < ROOM_H; y += 8, r++) {
@@ -294,60 +305,82 @@ function drawLantern(ctx, x, y, now) {
   rect(ctx, lx + 3, y + 8, 1, 3, '#ffd84a');
 }
 
-function drawSeason(ctx, season, now) {
+// `shelf`: the bookshelf is in the room, so its top can hold a decoration.
+function drawSeason(ctx, season, now, shelf) {
   if (season === 'tet') {
     drawLantern(ctx, 24, 10, now);
     drawLantern(ctx, 38, 14, now);
     // Yellow apricot blossom (hoa mai) in a vase on the bookshelf.
-    rect(ctx, 133, 24, 6, 6, '#3a7bff');
-    rect(ctx, 134, 25, 4, 1, '#ffffff');
-    line(ctx, 136, 24, 130, 12, '#6b4420');
-    line(ctx, 136, 24, 142, 10, '#6b4420');
-    line(ctx, 136, 22, 136, 8, '#6b4420');
-    for (const [x, y] of [[130, 12], [132, 15], [142, 10], [140, 14], [136, 8], [135, 12], [138, 17], [129, 10], [144, 12]]) {
-      rect(ctx, x - 1, y, 3, 1, '#ffd84a');
-      rect(ctx, x, y - 1, 1, 3, '#ffd84a');
-      rect(ctx, x, y, 1, 1, '#ff8a3d');
-    }
+    if (shelf) drawApricot(ctx);
   } else if (season === 'midautumn') {
-    // Star lantern (đèn ông sao) and mooncakes.
-    const swing = Math.round(Math.sin(now / 700));
-    line(ctx, 30, 0, 30 + swing, 10, '#6b4420');
-    const cx = 30 + swing, cy = 17;
-    for (let i = 0; i < 5; i++) {
-      const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
-      line(ctx, cx, cy, cx + Math.round(Math.cos(a) * 7), cy + Math.round(Math.sin(a) * 7), '#e8384f');
-    }
-    disc(ctx, cx, cy, 3, '#ffd84a', '#e8384f');
-    rect(ctx, 129, 28, 16, 2, '#ffffff');
-    for (const x of [131, 138]) {
-      rect(ctx, x, 23, 6, 5, '#c98b4a');
-      rect(ctx, x + 1, 24, 4, 3, '#e0aa6a');
-    }
+    drawMidAutumn(ctx, now, shelf);
   } else if (season === 'halloween') {
-    // Pumpkin on the bookshelf and a flapping bat.
+    drawHalloween(ctx, now, shelf);
+  } else if (season === 'christmas') {
+    drawChristmas(ctx, now, shelf);
+  }
+}
+
+function drawApricot(ctx) {
+  rect(ctx, 133, 24, 6, 6, '#3a7bff');
+  rect(ctx, 134, 25, 4, 1, '#ffffff');
+  line(ctx, 136, 24, 130, 12, '#6b4420');
+  line(ctx, 136, 24, 142, 10, '#6b4420');
+  line(ctx, 136, 22, 136, 8, '#6b4420');
+  for (const [x, y] of [[130, 12], [132, 15], [142, 10], [140, 14], [136, 8], [135, 12], [138, 17], [129, 10], [144, 12]]) {
+    rect(ctx, x - 1, y, 3, 1, '#ffd84a');
+    rect(ctx, x, y - 1, 1, 3, '#ffd84a');
+    rect(ctx, x, y, 1, 1, '#ff8a3d');
+  }
+}
+
+function drawMidAutumn(ctx, now, shelf) {
+  // Star lantern (đèn ông sao) and mooncakes.
+  const swing = Math.round(Math.sin(now / 700));
+  line(ctx, 30, 0, 30 + swing, 10, '#6b4420');
+  const cx = 30 + swing, cy = 17;
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+    line(ctx, cx, cy, cx + Math.round(Math.cos(a) * 7), cy + Math.round(Math.sin(a) * 7), '#e8384f');
+  }
+  disc(ctx, cx, cy, 3, '#ffd84a', '#e8384f');
+  if (!shelf) return;
+  rect(ctx, 129, 28, 16, 2, '#ffffff');
+  for (const x of [131, 138]) {
+    rect(ctx, x, 23, 6, 5, '#c98b4a');
+    rect(ctx, x + 1, 24, 4, 3, '#e0aa6a');
+  }
+}
+
+function drawHalloween(ctx, now, shelf) {
+  // Pumpkin on the bookshelf and a flapping bat.
+  if (shelf) {
     rect(ctx, 136, 19, 2, 3, '#4caf50');
     blob(ctx, 130, 21, 14, 9, '#ff8a3d', '#a0521d');
     rect(ctx, 133, 24, 2, 2, '#ffd84a');
     rect(ctx, 139, 24, 2, 2, '#ffd84a');
     rect(ctx, 134, 27, 6, 1, '#ffd84a');
-    const flap = Math.floor(now / 200) % 2;
-    rect(ctx, 28, 16, 4, 3, '#2a1d3a');
-    rect(ctx, 23, 15 + flap, 5, 2, '#2a1d3a');
-    rect(ctx, 32, 15 + flap, 5, 2, '#2a1d3a');
-    rect(ctx, 29, 16, 1, 1, '#ff5a6e');
-    rect(ctx, 31, 16, 1, 1, '#ff5a6e');
-  } else if (season === 'christmas') {
-    // Small tree on the bookshelf and a wreath on the wall.
+  }
+  const flap = Math.floor(now / 200) % 2;
+  rect(ctx, 28, 16, 4, 3, '#2a1d3a');
+  rect(ctx, 23, 15 + flap, 5, 2, '#2a1d3a');
+  rect(ctx, 32, 15 + flap, 5, 2, '#2a1d3a');
+  rect(ctx, 29, 16, 1, 1, '#ff5a6e');
+  rect(ctx, 31, 16, 1, 1, '#ff5a6e');
+}
+
+function drawChristmas(ctx, now, shelf) {
+  // Small tree on the bookshelf and a wreath on the wall.
+  if (shelf) {
     for (let i = 0; i < 12; i++) rect(ctx, 137 - Math.floor(i / 2), 14 + i, 1 + Math.floor(i / 2) * 2, 1, '#2e7d32');
     rect(ctx, 136, 26, 2, 4, '#6b4420');
     drawSprite(ctx, 'sparkle', 136, 11);
     const twinkle = Math.floor(now / 500) % 2;
     for (const [x, y, c] of [[135, 18, '#e8384f'], [139, 21, '#ffd84a'], [133, 23, '#5ab0ff'], [140, 24, '#e8384f']]) rect(ctx, x, y, 1, 1, twinkle ? c : '#ffffff');
-    disc(ctx, 30, 18, 6, '#2e7d32', '#1b5e20');
-    disc(ctx, 30, 18, 2, '#f6e7d0', '#2e7d32');
-    rect(ctx, 28, 23, 5, 2, '#e8384f');
   }
+  disc(ctx, 30, 18, 6, '#2e7d32', '#1b5e20');
+  disc(ctx, 30, 18, 2, '#f6e7d0', '#2e7d32');
+  rect(ctx, 28, 23, 5, 2, '#e8384f');
 }
 
 // Contest trophies sit on a small shelf under the picture frame.
@@ -366,53 +399,111 @@ function drawPlant(ctx, now) {
   if (Math.floor(now / 800) % 2) rect(ctx, 35, 76, 1, 1, '#4caf50'); // leaf sways
 }
 
-// Everything behind the cat.
-export function drawRoom(ctx, state, now, clock) {
-  const time = new Date(clock);
-  const owned = new Set(state.owned);
-  drawWall(ctx, state.equipped.wall);
-  drawFloor(ctx, state.equipped.floor);
-  if (owned.has('decor_lights')) drawFairyLights(ctx, now, false);
+// Where each item sits, for drawing scratches on it when it is broken: [x, y, w, h].
+const ITEM_BOXES = {
+  cat_tree: [4, 46, 30, 42],
+  sofa: [44, 52, 56, 35],
+  bookshelf: [126, 30, 22, 57],
+  lamp: [147, 28, 12, 58],
+  soft_bed: [20, 103, 28, 10],
+  auto_feeder: [61, 99, 8, 8],
+  auto_litter: [138, 94, 16, 7],
+  decor_plant: [34, 73, 9, 13],
+  decor_rug: [60, 100, 48, 14],
+  decor_frame: [104, 32, 18, 14],
+  decor_lights: [0, 3, 160, 8],
+  decor_beanbag: [92, 94, 20, 16],
+  decor_fishbowl: [101, 67, 20, 20],
+  toy_yarn: [80, 108, 6, 6],
+  toy_mouse: [122, 112, 9, 4],
+};
 
-  drawWindow(ctx, time, now);
-  drawCurtains(ctx, now);
-  drawClock(ctx, time);
-  if (owned.has('decor_frame')) {
-    rect(ctx, 104, 32, 18, 14, WOOD);
-    rect(ctx, 106, 34, 14, 10, '#bfe6ff');
-    drawSprite(ctx, 'fish', 109, 36);
+// Claw marks and a dull shade over a broken item.
+function drawScratches(ctx, [x, y, w, h]) {
+  ctx.fillStyle = 'rgba(50, 35, 25, 0.3)';
+  ctx.fillRect(x, y, w, h);
+  const marks = Math.max(1, Math.min(3, Math.floor(w / 6)));
+  const left = x + Math.floor((w - marks * 3) / 2);
+  const top = y + Math.floor(h / 4);
+  const len = Math.max(3, Math.min(8, Math.floor(h / 2)));
+  for (let m = 0; m < marks; m++) {
+    for (let i = 0; i < len; i++) rect(ctx, left + m * 3 + Math.floor(i / 3), top + i, 1, 1, '#2a1d1d');
   }
-  drawTrophyShelf(ctx, owned);
-  drawSunbeam(ctx, time);
+}
 
-  drawCatTree(ctx, now);
-  drawSofa(ctx);
-  drawBookshelf(ctx);
-  drawSeason(ctx, seasonOf(clock), now);
-  drawLamp(ctx, state.asleep || isNight(time.getHours()));
-  if (owned.has('decor_plant')) drawPlant(ctx, now);
-  if (owned.has('decor_fishbowl')) drawFishbowlTable(ctx, now);
+function drawCushion(ctx) {
+  blob(ctx, 22, 105, 24, 7, '#c9b08a', '#6b5040');
+  rect(ctx, 28, 107, 2, 1, '#a08860'); // worn patches
+  rect(ctx, 38, 108, 3, 1, '#a08860');
+}
 
-  if (owned.has('decor_rug')) drawRug(ctx);
-  drawBed(ctx);
-  if (owned.has('decor_beanbag')) drawBeanbag(ctx);
+function drawBowl(ctx, now) {
   drawSprite(ctx, 'bowl', 50, 106);
   if (active('bowlFull', now) || active('eat', now)) {
     for (let i = 0; i < 3; i++) rect(ctx, 52 + i * 2, 104 + (i % 2), 2, 2, '#b06a3b');
   }
-  drawLitter(ctx, Math.min(...state.cats.map((c) => c.stats.cleanliness)), now);
-  if (owned.has('toy_yarn')) drawSprite(ctx, 'toy_yarn', 80, 108);
-  if (owned.has('toy_mouse')) drawSprite(ctx, 'toy_mouse', 122, 112, Math.floor(now / 2000) % 2 === 0);
+}
+
+// Everything behind the cat. Only items the player owns are in the room.
+export function drawRoom(ctx, state, now, clock) {
+  const time = new Date(clock);
+  const owned = new Set(state.owned);
+  const broken = new Set(state.broken ?? []);
+  const has = (id) => owned.has(id);
+  const works = (id) => owned.has(id) && !broken.has(id);
+  // Draws an owned item, with scratches when it is broken.
+  const item = (id, draw) => {
+    if (!has(id)) return;
+    draw();
+    if (broken.has(id)) drawScratches(ctx, ITEM_BOXES[id]);
+  };
+
+  drawWall(ctx, state.equipped.wall);
+  drawFloor(ctx, state.equipped.floor);
+  item('decor_lights', () => drawFairyLights(ctx, now, false));
+
+  drawWindow(ctx, time, now);
+  drawCurtains(ctx, now);
+  drawClock(ctx, time);
+  item('decor_frame', () => {
+    rect(ctx, 104, 32, 18, 14, WOOD);
+    rect(ctx, 106, 34, 14, 10, '#bfe6ff');
+    drawSprite(ctx, 'fish', 109, 36);
+  });
+  drawTrophyShelf(ctx, owned);
+  drawSunbeam(ctx, time);
+
+  item('cat_tree', () => drawCatTree(ctx, now));
+  item('sofa', () => drawSofa(ctx));
+  item('bookshelf', () => drawBookshelf(ctx));
+  drawSeason(ctx, seasonOf(clock), now, has('bookshelf'));
+  item('lamp', () => drawLamp(ctx, works('lamp') && (state.asleep || isNight(time.getHours()))));
+  item('decor_plant', () => drawPlant(ctx, now));
+  item('decor_fishbowl', () => drawFishbowlTable(ctx, now));
+
+  item('decor_rug', () => drawRug(ctx));
+  if (has('soft_bed')) item('soft_bed', () => drawBed(ctx));
+  else if (has('cushion')) drawCushion(ctx);
+  item('decor_beanbag', () => drawBeanbag(ctx));
+  if (has('bowl')) drawBowl(ctx, now);
+  item('auto_feeder', () => drawSprite(ctx, 'auto_feeder', 61, 99));
+  if (has('litter')) drawLitter(ctx, Math.min(...state.cats.map((c) => c.stats.cleanliness)), now);
+  item('auto_litter', () => drawSprite(ctx, 'auto_litter', 138, 94));
+  item('toy_yarn', () => drawSprite(ctx, 'toy_yarn', 80, 108));
+  item('toy_mouse', () => drawSprite(ctx, 'toy_mouse', 122, 112, Math.floor(now / 2000) % 2 === 0));
 }
 
 // Darkens the room when the lights are off; window, lamp and fairy lights still glow.
 export function drawDarkness(ctx, state, now, clock) {
   const time = new Date(clock);
+  const working = (id) => state.owned.includes(id) && !(state.broken ?? []).includes(id);
   ctx.fillStyle = 'rgba(12, 14, 40, 0.6)';
   ctx.fillRect(0, 0, ROOM_W, ROOM_H);
   drawWindow(ctx, time, now);
-  drawLamp(ctx, true);
-  drawLampGlow(ctx);
-  if (state.owned.includes('decor_lights')) drawFairyLights(ctx, now, true);
-  drawSeason(ctx, seasonOf(clock), now);
+  if (working('lamp')) {
+    drawLamp(ctx, true);
+    drawLampGlow(ctx);
+  }
+  if (working('decor_lights')) drawFairyLights(ctx, now, true);
+  drawSeason(ctx, seasonOf(clock), now, state.owned.includes('bookshelf'));
 }
