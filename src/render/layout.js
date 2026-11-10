@@ -25,3 +25,33 @@ export const isHigh = (g) => g < FLOOR_G - 15;
 // and where they curl up at night, in cat order. The last five sleep spots are always there.
 export const START_SPOTS = ['center', 'right', 'front', 'bed', 'bowl'];
 export const SLEEP_SPOTS = ['bed', 'sofa', 'beanbag', 'tree', 'front', 'right', 'center', 'bowl'];
+
+// Where each item sits: [x, y, w, h]. Used to draw claw marks on broken items and to find where a cat scratches.
+export const ITEM_BOXES = {
+  cat_tree: [4, 46, 30, 42],
+  sofa: [44, 52, 56, 35],
+  bookshelf: [126, 30, 22, 57],
+  lamp: [147, 28, 12, 58],
+  soft_bed: [20, 103, 28, 10],
+  auto_feeder: [61, 99, 8, 8],
+  auto_litter: [138, 94, 16, 7],
+  decor_plant: [34, 73, 9, 13],
+  decor_rug: [60, 100, 48, 14],
+  decor_frame: [104, 32, 18, 14],
+  decor_lights: [0, 3, 160, 8],
+  decor_beanbag: [92, 94, 20, 16],
+  decor_fishbowl: [101, 67, 20, 20],
+  toy_yarn: [80, 108, 6, 6],
+  toy_mouse: [122, 112, 9, 4],
+};
+
+// Where an angry cat stands to scratch an item: on the floor beside it, facing it (face 1 = right).
+export function scratchPoint(itemId) {
+  const [x, y, w, h] = ITEM_BOXES[itemId];
+  const g = Math.max(FLOOR_Y + 12, Math.min(FLOOR_G + 6, y + h + 2));
+  const left = x - 6;
+  const right = x + w + 6;
+  if (left >= 10) return { x: left, g, face: 1 };
+  if (right <= ROOM_W - 10) return { x: right, g, face: -1 };
+  return { x: Math.round(x + w / 2), g, face: 1 }; // as wide as the room: stand in the middle
+}

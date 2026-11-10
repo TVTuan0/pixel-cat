@@ -30,6 +30,7 @@ export default {
   mood_hungry: "I'm hungry...",
   mood_sleepy: "I'm so sleepy...",
   mood_dirty: 'My box is dirty!',
+  mood_angry: 'Angry!',
   mood_grumpy: 'Hmph. Where were you?',
   mood_sleeping: 'Zzz...',
 

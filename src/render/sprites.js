@@ -173,6 +173,8 @@ export const SPRITES = {
     rows: ['..yyyy..', '.yyyyyy.', 'yyyyyyyy', 'oooooooo', '...gg...', '...gg...', '...gg...', '...gg...', '.gggggg.'],
   },
   heart: { colors: { r: '#ff4d6d' }, rows: ['.r.r.', 'rrrrr', '.rrr.', '..r..'] },
+  bug: { colors: { k: '#2a1d1d', l: '#7a6a85' }, rows: ['l.l', 'kkk', '.k.'] },
+  anger: { colors: { r: '#e8384f' }, rows: ['rr.rr', 'r...r', '.....', 'r...r', 'rr.rr'] },
   zzz: { colors: { z: '#ffffff' }, rows: ['zzzz', '..z.', '.z..', 'zzzz'] },
   sparkle: { colors: { w: '#ffffff' }, rows: ['.w.', 'www', '.w.'] },
   coin: {

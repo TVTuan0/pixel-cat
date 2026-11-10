@@ -66,7 +66,7 @@ describe('angry cats', () => {
   it('breaks one item when a stat drops below 10', () => {
     const s = applyElapsed(room({ hunger: 15 }), T0 + HOUR, first);
     expect(s.broken).toEqual(['cat_tree']);
-    expect(s.news).toEqual([{ cat: 'Mochi', item: 'cat_tree' }]);
+    expect(s.news).toEqual([{ cat: 'Mochi', catId: 1, item: 'cat_tree' }]);
   });
 
   it('a calm cat breaks nothing', () => {

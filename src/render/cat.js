@@ -17,6 +17,7 @@ export const FACES = {
   sleepy: { eyes: 'sleepy', mouth: 'small' },
   dirty: { eyes: 'open', mouth: 'frown' },
   grumpy: { eyes: 'grumpy', mouth: 'frown' },
+  angry: { eyes: 'grumpy', mouth: 'open' },
   sleeping: { eyes: 'closed', mouth: 'small' },
 };
 
@@ -81,8 +82,23 @@ function drawHat(ctx, hat, headX, headY, hw) {
   if (hat === 'hat_crown') drawSprite(ctx, 'hat_crown', mid - 4, headY - 4);
 }
 
-// Front view. `lying` draws the curled-up sleeping shape. Returns the head box for hearts/Zzz.
-export function drawFrontCat(ctx, { size, cx, ground, face, lying, look, bob, now, equipped, palette }) {
+// A back leg reaching up the left side to scratch behind the ear. `up` 0 or 1 moves the paw.
+function drawItchPaw(ctx, bodyLeft, ground, headX, headY, up) {
+  const pawX = headX - 4;
+  const pawY = headY + 1 - up * 2;
+  const steps = [];
+  for (let y = ground - 3, x = bodyLeft + 1; y > pawY + 3; y -= 2) steps.push([x, y]), (x = Math.max(pawX + 2, x - 1));
+  for (const [x, y] of steps) rect(ctx, x - 1, y - 1, 3, 3, C.outline);
+  for (const [x, y] of steps) rect(ctx, x, y, 1, 1, C.fur);
+  blob(ctx, pawX, pawY, 5, 5, C.fur, C.outline);
+  rect(ctx, pawX + 1, pawY + 1, 3, 1, C.furLight);
+  rect(ctx, pawX + 1, pawY - 1, 1, 1, C.outline); // toes
+  rect(ctx, pawX + 3, pawY - 1, 1, 1, C.outline);
+}
+
+// Front view. `lying` draws the curled-up sleeping shape. `itch` (0/1, or null) scratches an ear.
+// Returns the head box for hearts/Zzz.
+export function drawFrontCat(ctx, { size, cx, ground, face, lying, look, bob, now, equipped, palette, itch = null }) {
   C = palette;
   const { hw, hh, ear } = size;
   const bw = lying ? size.bw + 6 : size.bw;
@@ -144,16 +160,28 @@ export function drawFrontCat(ctx, { size, cx, ground, face, lying, look, bob, no
     if (equipped.collar === 'collar_gold') rect(ctx, cx - 1, headY + hh, 3, 2, '#ffcf3a');
   }
   drawHat(ctx, equipped.hat, headX, headY, hw);
+  if (itch !== null && !lying) drawItchPaw(ctx, bodyX, ground, headX, headY, itch);
 
   return { x: Math.min(headX, bodyX) - 1, y: headY - ear, w: Math.max(hw, bw) + 2, h: ground - headY + ear, headX, headY, hw };
 }
 
+// Claw marks in front of a scratching cat, flickering with each swipe.
+function drawClawMarks(ctx, x, y, swipe) {
+  for (let m = 0; m < 3; m++) {
+    for (let i = 0; i < 3; i++) rect(ctx, x + m * 2 + (i === 2 ? 1 : 0), y + i + swipe, 1, 1, '#5a3a1e');
+  }
+}
+
 // Side view facing right; `facing` -1 mirrors it. `frame` 0-3 moves the legs; `jumping` stretches them.
-export function drawSideCat(ctx, { size, x, ground, facing, frame, jumping, face, equipped, now, palette }) {
+// `crouch` lowers the body and wiggles the back end before a pounce.
+// `scratch` (0/1, or null) raises the front paws in turn to scratch whatever is in front.
+export function drawSideCat(ctx, { size, x, ground, facing, frame, jumping, face, equipped, now, palette, crouch = false, scratch = null }) {
   C = palette;
-  const { L, H, leg, hw, hh } = size.side;
+  const { L, H, hw, hh } = size.side;
+  const leg = crouch ? 0 : size.side.leg;
   const ear = size.ear;
-  const bob = !jumping && frame % 2 === 1 ? 1 : 0;
+  const bob = !jumping && !crouch && scratch === null && frame % 2 === 1 ? 1 : 0;
+  const wiggle = crouch ? [0, 1, 0, -1][Math.floor(now / 90) % 4] : 0;
 
   ctx.save();
   ctx.translate(x, 0);
@@ -164,16 +192,17 @@ export function drawSideCat(ctx, { size, x, ground, facing, frame, jumping, face
   const legTop = bodyTop + H - 2;
 
   // Tail, raised behind the body.
-  const sway = [0, 1, 0, -1][Math.floor(now / 200) % 4];
-  drawTail(ctx, bx, bodyTop + 2, [[0, 0], [-1, 0], [-2, -1], [-3, -2], [-3, -3], [-3 + sway, -4], [-2 + sway, -5]]);
+  const sway = [0, 1, 0, -1][Math.floor(now / (crouch ? 90 : 200)) % 4];
+  drawTail(ctx, bx + wiggle, bodyTop + 2, [[0, 0], [-1, 0], [-2, -1], [-3, -2], [-3, -3], [-3 + sway, -4], [-2 + sway, -5]]);
 
   // Legs: diagonal pairs step together. Jumping stretches front legs forward and back legs back.
   const xs = [bx + 1, bx + 4, bx + L - 7, bx + L - 4];
   const step = [1, 0, -1, 0][frame % 4];
   xs.forEach((lx, i) => {
+    if (scratch !== null && i >= 2) return; // front paws are up, drawn below
     const pairA = i === 0 || i === 3;
     const dx = jumping ? (i < 2 ? -2 : 2) : pairA ? step : -step;
-    const lifted = !jumping && dx > 0 ? 1 : 0;
+    const lifted = !jumping && !crouch && dx > 0 ? 1 : 0;
     const h = leg + 2 + bob - lifted;
     rect(ctx, lx + dx, legTop, 3, h, C.outline);
     rect(ctx, lx + dx + 1, legTop, 1, h - 1, C.fur);
@@ -210,6 +239,27 @@ export function drawSideCat(ctx, { size, x, ground, facing, frame, jumping, face
     if (equipped.collar === 'collar_gold') rect(ctx, hx + 3, hy + hh - 1, 2, 2, '#ffcf3a');
   }
   drawHat(ctx, equipped.hat, hx, hy, hw);
+  if (scratch !== null) {
+    // Two front legs reaching forward from the chest, swiping in turn.
+    const chestX = bx + L - 3;
+    const chestY = bodyTop + H - 3;
+    for (const i of [0, 1]) {
+      const reach = i === scratch ? 3 : 0;
+      const pawX = chestX + 5 + i * 2;
+      const pawY = bodyTop - 1 - reach + i * 2;
+      for (let k = 0; k <= 3; k++) {
+        const x = Math.round(chestX + ((pawX - chestX) * k) / 3);
+        const y = Math.round(chestY + ((pawY - chestY) * k) / 3);
+        rect(ctx, x - 1, y - 1, 3, 3, C.outline);
+      }
+      for (let k = 0; k <= 3; k++) {
+        const x = Math.round(chestX + ((pawX - chestX) * k) / 3);
+        const y = Math.round(chestY + ((pawY - chestY) * k) / 3);
+        rect(ctx, x, y, 1, 1, k === 3 ? C.furLight : C.fur);
+      }
+    }
+    drawClawMarks(ctx, chestX + 10, bodyTop - 4, scratch);
+  }
   ctx.restore();
 
   const left = x + facing * bx;

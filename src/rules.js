@@ -90,7 +90,7 @@ function breakThings(state, before, perHour, now, random) {
       if (breakable.length) {
         const item = breakable[Math.floor(random() * breakable.length)];
         broken = [...broken, item];
-        news = [...news, { cat: cat.name, item }];
+        news = [...news, { cat: cat.name, catId: cat.id, item }];
       }
       next += BREAK_EVERY_HOURS * HOUR;
     }
@@ -128,6 +128,7 @@ const LOW_NEED_MOOD = { hunger: 'hungry', energy: 'sleepy', cleanliness: 'dirty'
 // Mood of a cat (the selected one by default).
 export function moodOf(state, cat = selectedCat(state)) {
   if (state.asleep) return 'sleeping';
+  if (Object.values(cat.stats).some((v) => v < ANGRY_BELOW)) return 'angry';
   const low = Object.keys(LOW_NEED_MOOD).filter((k) => cat.stats[k] < LOW_STAT);
   if (low.length > 1) return 'grumpy';
   if (low.length === 1) return LOW_NEED_MOOD[low[0]];

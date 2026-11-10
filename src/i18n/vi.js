@@ -30,6 +30,7 @@ export default {
   mood_hungry: 'Đói bụng quá...',
   mood_sleepy: 'Buồn ngủ quá...',
   mood_dirty: 'Hộp cát bẩn rồi!',
+  mood_angry: 'Đang giận!',
   mood_grumpy: 'Hứ. Bạn đi đâu vậy?',
   mood_sleeping: 'Khò khò...',
 

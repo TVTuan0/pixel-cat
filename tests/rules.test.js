@@ -26,7 +26,7 @@ describe('applyElapsed', () => {
     const s = applyElapsed(fresh(), T0 + 3 * DAY);
     for (const v of Object.values(cat(s).stats)) expect(v).toBeGreaterThanOrEqual(0);
     expect(cat(s).stats.hunger).toBe(0);
-    expect(moodOf(s)).toBe('grumpy');
+    expect(moodOf(s)).toBe('angry');
   });
 
   it('raises energy while asleep, capped at 100', () => {

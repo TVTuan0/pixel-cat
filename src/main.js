@@ -8,7 +8,7 @@ import {
 import { buildEntry } from './contestRoom.js';
 import { contestAvailable, getContestStatus, getDuel, sendVote, sendEntry } from './contest.js';
 import { FOODS, STICKERS, CLIP_SECONDS } from './config.js';
-import { drawScene, playEffect, playCatEffect, catAt, stepCats, feedCat, resetCats } from './render/canvas.js';
+import { drawScene, playEffect, playCatEffect, catAt, stepCats, feedCat, resetCats, scratchItem } from './render/canvas.js';
 import { spriteCanvas } from './render/sprites.js';
 import { setSoundEnabled, sfx } from './sound.js';
 import { makeCard, shareCard, shareLink, shareFile } from './snapshot.js';
@@ -367,6 +367,8 @@ async function checkEvents() {
     const news = state.news;
     commit({ ...state, news: [] });
     sfx.no();
+    // Each cat runs to the last thing it broke and scratches it.
+    for (const n of news) scratchItem(n.catId, n.item);
     const lines = news.map((n) => t('brokeLine', { name: n.cat, item: t(`item_${n.item}`) })).join(' ');
     await showMessage(t('brokeTitle'), `${lines} ${t('brokeBody')}`, spriteCanvas(news[0].item, 6));
   }

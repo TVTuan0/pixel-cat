@@ -96,6 +96,7 @@ export const MAX_HELP = 40;
 // Angry cats break items from these slots. Basic supplies never break, so feeding and cleaning always work.
 export const BREAKABLE_SLOTS = ['gear', 'furniture', 'decor', 'toy'];
 export const ANGRY_BELOW = 10; // a cat with any stat below this is angry
+export const ITCHY_BELOW = 40; // below this cleanliness a cat scratches itself much more often
 export const BREAK_EVERY_HOURS = 6; // an angry cat breaks one more item this often
 export const REPAIR_SHARE = 0.5; // repairs cost this share of the price
 

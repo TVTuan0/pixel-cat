@@ -2,7 +2,7 @@
 import { drawSprite } from './sprites.js';
 import { rect, blob, line, disc } from './draw.js';
 import { active } from './effects.js';
-import { ROOM_W, ROOM_H, FLOOR_Y } from './layout.js';
+import { ROOM_W, ROOM_H, FLOOR_Y, ITEM_BOXES } from './layout.js';
 import { weatherOf, seasonOf } from '../rules.js';
 
 const WALLS = {
@@ -398,25 +398,6 @@ function drawPlant(ctx, now) {
   drawSprite(ctx, 'decor_plant', 34, 73);
   if (Math.floor(now / 800) % 2) rect(ctx, 35, 76, 1, 1, '#4caf50'); // leaf sways
 }
-
-// Where each item sits, for drawing scratches on it when it is broken: [x, y, w, h].
-const ITEM_BOXES = {
-  cat_tree: [4, 46, 30, 42],
-  sofa: [44, 52, 56, 35],
-  bookshelf: [126, 30, 22, 57],
-  lamp: [147, 28, 12, 58],
-  soft_bed: [20, 103, 28, 10],
-  auto_feeder: [61, 99, 8, 8],
-  auto_litter: [138, 94, 16, 7],
-  decor_plant: [34, 73, 9, 13],
-  decor_rug: [60, 100, 48, 14],
-  decor_frame: [104, 32, 18, 14],
-  decor_lights: [0, 3, 160, 8],
-  decor_beanbag: [92, 94, 20, 16],
-  decor_fishbowl: [101, 67, 20, 20],
-  toy_yarn: [80, 108, 6, 6],
-  toy_mouse: [122, 112, 9, 4],
-};
 
 // Claw marks and a dull shade over a broken item.
 function drawScratches(ctx, [x, y, w, h]) {
