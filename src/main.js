@@ -1,16 +1,18 @@
-import { t, setLanguage, guessLanguage } from './i18n/index.js';
+import { t, line, setLanguage, guessLanguage } from './i18n/index.js';
+import { talkKey } from './talk.js';
 import { createState, loadState, saveState, clearState } from './state.js';
 import {
   applyElapsed, feed, feedAll, pet, clean, toggleSleep, canPlay, finishMiniGame,
   buy, equip, repair, claimDailyGift, stageOf, ageInDays, recordAction, claimTask, checkStickers,
-  selectCat, selectedCat, goOutside, comeInside, wanderOutside, nextCatOffer, adoptCat, rewardContestEntry, claimContestPrize, pickUpPresent,
+  selectCat, selectedCat, moodOf, goOutside, comeInside, wanderOutside, nextCatOffer, adoptCat, rewardContestEntry, claimContestPrize, pickUpPresent,
 } from './rules.js';
 import { buildEntry } from './contestRoom.js';
 import { contestAvailable, getContestStatus, getDuel, sendVote, sendEntry } from './contest.js';
-import { FOODS, STICKERS, CLIP_SECONDS, GARDEN_WANDER_SECONDS } from './config.js';
+import { FOODS, SHOP_ITEMS, STICKERS, CLIP_SECONDS, GARDEN_WANDER_SECONDS } from './config.js';
 import { ROOM_DOOR } from './render/layout.js';
 import { butterflyAt, swoop } from './render/garden.js';
-import { drawScene, playEffect, playCatEffect, catAt, presentAt, stepCats, feedCat, resetCats, scratchItem, chaseButterflies } from './render/canvas.js';
+import { drawScene, playEffect, playCatEffect, catAt, presentAt, stepCats, feedCat, resetCats, scratchItem, chaseButterflies, catHeads, takeCatEvents,
+} from './render/canvas.js';
 import { spriteCanvas } from './render/sprites.js';
 import { setSoundEnabled, sfx } from './sound.js';
 import { makeCard, shareCard, shareLink, shareFile } from './snapshot.js';
@@ -18,7 +20,7 @@ import { recordClip, canRecord } from './clip.js';
 import { startAnalytics, track } from './analytics.js';
 import { startInstallSupport, installState, promptInstall } from './install.js';
 import {
-  initUI, renderHud, setNavView, say, showMood, closeSheet, isSheetOpen, openFeed, openShop,
+  initUI, renderHud, setNavView, catSay, placeCatBubbles, say, showMood, closeSheet, isSheetOpen, openFeed, openShop,
   openSettings, openAdopt, openGamePicker, openMiniGame, showMessage, catPreview, openTasks, openShareChoice, openContest, openDuel,
 } from './ui.js';
 
@@ -70,11 +72,15 @@ const handlers = {
       const r = feed(state, foodId);
       if (r.result === 'poor') return result(t('poor'), sfx.no);
       closeSheet();
-      if (r.result === 'full') return result(t('feedFull'), sfx.no);
+      if (r.result === 'full') {
+        sfx.no();
+        return talk(state.selected, 'feedFull');
+      }
       commit(r.state);
       feedCat(state.selected);
-      result(t('feedOk'), sfx.eat);
+      sfx.eat();
       const isTreat = FOODS.find((f) => f.id === foodId).price > 0;
+      talk(state.selected, isTreat ? 'treat' : 'feed');
       record(['feed', 1], ...(isTreat ? [['treat', 1]] : []));
     });
   },
@@ -90,6 +96,7 @@ const handlers = {
         track(`${kind}_game`);
         sfx.coin();
         playCatEffect('hop', state.selected, 500);
+        talk(state.selected, 'play');
         return points;
       },
     }));
@@ -103,6 +110,7 @@ const handlers = {
     playEffect('sparkle', 1200);
     const text = r.done ? t('cleanOk') : t('cleanMore');
     result(r.coins ? `${text} +${r.coins} ${t('coinsWord')}` : text, sfx.clean);
+    if (r.done) talk(state.selected, 'clean');
     record(['clean', 1]);
   },
 
@@ -150,6 +158,7 @@ const handlers = {
         track(`buy_${id}`);
         sfx.coin();
         say(t('bought'));
+        if (['gear', 'furniture', 'garden', 'decor', 'toy'].includes(SHOP_ITEMS.find((i) => i.id === id).slot)) talk(state.selected, 'bought');
         reopen();
       },
       onEquip: (id) => {
@@ -226,12 +235,14 @@ const handlers = {
     const cat = selectedCat(state);
     if (cat.outside) {
       commit(comeInside(state, cat.id));
-      return result(t('cameIn', { name: cat.name }), sfx.tap);
+      sfx.tap();
+      return talk(cat.id, 'comeIn', 6000); // long enough to still show once it walks through the door
     }
     const r = goOutside(state, cat.id, Date.now());
     if (r.result !== 'ok') return result(t(`out_${r.result}`), sfx.no);
     commit(r.state);
-    result(t('wentOut', { name: cat.name }), sfx.meow);
+    sfx.meow();
+    talk(cat.id, 'outside', 6000);
   },
 
   tapRoom(x, y) {
@@ -258,7 +269,8 @@ const handlers = {
       record(['pet', 1]);
     }
     playCatEffect('purr', id, 1500);
-    result(t('petOk'), sfx.purr);
+    sfx.purr();
+    talk(id, 'pet');
   },
 };
 
@@ -407,6 +419,7 @@ async function checkEvents() {
     sfx.no();
     // Each cat runs to the last thing it broke and scratches it.
     for (const n of news) scratchItem(n.catId, n.item);
+    for (const n of news) talk(n.catId, 'broke', 6000); // the message covers the room at first
     const lines = news.map((n) => t('brokeLine', { name: n.cat, item: t(`item_${n.item}`) })).join(' ');
     await showMessage(t('brokeTitle'), `${lines} ${t('brokeBody')}`, spriteCanvas(news[0].item, 6));
   }
@@ -468,6 +481,7 @@ function pickUp(index) {
   const name = selectedCat(state).name;
   if (r.present.item) say(t('presentItem', { name, item: t(`item_${r.present.item}`) }), 3000);
   else say(t('presentCoins', { name, n: r.present.coins }), 2500);
+  talk(state.selected, 'present');
 }
 
 // Says so when new presents have arrived (also right after the game opens).
@@ -478,12 +492,30 @@ function notePresents() {
   seenPresents = n;
 }
 
+// A cat says something fitting for `situation` and its mood, for `ms`.
+function talk(id, situation, ms) {
+  const cat = state.cats.find((c) => c.id === id);
+  if (cat) catSay(id, line(talkKey(situation, moodOf(state, cat)), { name: cat.name }), ms);
+}
+
+// Now and then a cat on screen says something on its own.
+let nextChatter = Date.now() + 15000;
+function chatter(now) {
+  if (now < nextChatter || state.asleep || isSheetOpen()) return;
+  nextChatter = now + 20000 + Math.random() * 20000;
+  const onScreen = [...catHeads().keys()];
+  const id = onScreen[Math.floor(Math.random() * onScreen.length)];
+  const cat = state.cats.find((c) => c.id === id);
+  if (cat) talk(id, cat.outside ? 'idle_garden' : 'idle');
+}
+
 function tick() {
   if (!state) return;
   state = applyElapsed(state, Date.now());
   wander(Date.now());
   if (state.asleep && view === 'garden') setView('room'); // everyone is inside at bedtime
   notePresents();
+  chatter(Date.now());
   renderHud(state, Date.now());
   awardStickers();
   checkEvents();
@@ -495,6 +527,8 @@ function frame(now) {
     if (state) stepCats(state, now);
     const mood = drawScene(ctx, shown, now, Date.now(), { live: Boolean(state), view: state ? view : 'room' });
     if (state) showMood(t(`mood_${mood}`));
+    if (state) for (const e of takeCatEvents()) if (Math.random() < 0.6) talk(e.id, e.event);
+    placeCatBubbles(state ? catHeads() : new Map(), now);
   }
   requestAnimationFrame(frame);
 }

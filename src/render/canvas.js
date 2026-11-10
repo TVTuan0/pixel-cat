@@ -26,6 +26,8 @@ const walkers = new Map(); // cat id -> { where, walker, leaving }
 const goingTo = new Map(); // cat id -> where the rules last said it should be
 const nextIdleAt = new Map(); // cat id -> time of its next little animation
 let boxes = []; // [{ id, box }] from the last live frame, front-most last
+const catEvents = []; // things a cat did that it may want to talk about: [{ id, event }]
+const leaping = new Set(); // ids of cats in the middle of a leap in the garden
 let lastFrame = null;
 const bugs = new Set(); // ids of cats pouncing on a little bug (not a toy)
 
@@ -60,6 +62,16 @@ function drawPresents(ctx, state, now) {
     drawSprite(ctx, `present_${p.look}`, spot.x, spot.y);
     if ((Math.floor(now / 700) + i) % 3 === 0) drawSprite(ctx, 'sparkle', spot.x + 5, spot.y - 4);
   }
+}
+
+// The top middle of each cat on screen in the last live frame, for speech bubbles: id -> { x, y }.
+export function catHeads() {
+  return new Map(boxes.map(({ id, box }) => [id, { x: box.headX + box.hw / 2, y: box.y }]));
+}
+
+// Things cats did since the last call, e.g. [{ id: 1, event: 'butterfly' }].
+export function takeCatEvents() {
+  return catEvents.splice(0);
 }
 
 // The cat under a tap, front-most first, or null.
@@ -219,7 +231,9 @@ export function stepCats(state, now) {
     if (pose.mode === 'leap' && w.where === 'garden') {
       const hit = butterflyNear(pose.x + pose.facing * 8, pose.g - 12);
       if (hit >= 0) scare(hit, now);
-    }
+      if (!leaping.has(cat.id)) catEvents.push({ id: cat.id, event: 'butterfly' });
+      leaping.add(cat.id);
+    } else leaping.delete(cat.id);
     if (pose.mode === 'sit') pickIdle(state, cat, w, now);
   });
 }

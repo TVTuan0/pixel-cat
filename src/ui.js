@@ -200,6 +200,36 @@ export function say(text, ms = 2000) {
   bubble.classList.add('pop');
 }
 
+// Speech bubbles over the cats' heads, one per cat. They are placed every frame at the spot where the cat was drawn.
+const speech = new Map(); // cat id -> { bubble, until }
+export function catSay(id, text, ms = 3000) {
+  let s = speech.get(id);
+  if (!s) {
+    s = { bubble: el('div', { class: 'cat-bubble', 'aria-live': 'polite' }) };
+    document.querySelector('.screen').append(s.bubble);
+    speech.set(id, s);
+  }
+  s.until = performance.now() + ms;
+  s.bubble.textContent = text;
+  s.bubble.classList.remove('pop');
+  void s.bubble.offsetWidth;
+  s.bubble.classList.add('pop');
+}
+
+// `heads`: cat id -> { x, y } of the top of each cat on screen, in room pixels. Cats not on screen get no bubble.
+export function placeCatBubbles(heads, now) {
+  for (const [id, s] of speech) {
+    const head = heads.get(id);
+    s.bubble.hidden = !head || now > s.until;
+    if (s.bubble.hidden) continue;
+    // Over the head, but kept inside the frame so a cat near the edge doesn't get its words cut off.
+    const width = s.bubble.parentElement.clientWidth;
+    const half = s.bubble.offsetWidth / 2 + 4;
+    s.bubble.style.left = `${Math.min(width - half, Math.max(half, (head.x / ROOM_W) * width))}px`;
+    s.bubble.style.bottom = `${100 - (head.y / ROOM_H) * 100 + 2}%`;
+  }
+}
+
 export function showMood(text) {
   if (performance.now() < bubbleUntil) return;
   const bubble = $('bubble');
