@@ -7,7 +7,7 @@ import {
 import { HOUR, DAY, FOODS, START_COINS, NEW_CAT_PRICES, MAX_CATS } from '../src/config.js';
 
 const T0 = new Date(2026, 10, 8, 10, 0, 0).getTime();
-const fresh = () => createState('Mochi', T0, 'en');
+const fresh = () => ({ ...createState('Mochi', T0, 'en'), owned: ['bowl', 'litter', 'cushion'] });
 const cat = (s) => selectedCat(s);
 // A one-cat game whose cat has these stats, plus room-wide changes in `extra`.
 const withStats = (stats, extra = {}) => {
@@ -193,7 +193,7 @@ describe('claimDailyGift', () => {
 function withCats(count, { newestAge = 3 * DAY, coins = 1000 } = {}) {
   const s = createState('Cat1', T0 - 30 * DAY, 'en');
   const cats = Array.from({ length: count }, (_, i) => newCat(i + 1, `Cat${i + 1}`, 'grey', T0 - (i === count - 1 ? newestAge : 30 * DAY)));
-  return { ...s, cats, coins, lastSeen: T0 };
+  return { ...s, cats, coins, lastSeen: T0, owned: ['bowl', 'litter', 'cushion'] };
 }
 
 describe('more cats', () => {

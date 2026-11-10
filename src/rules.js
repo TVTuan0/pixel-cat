@@ -6,7 +6,7 @@ import {
   CLEAN_COINS, PLAY_MIN_ENERGY, PLAY_ENERGY_COST, GIFT_BASE_COINS,
   GIFT_STREAK_BONUS, GIFT_STREAK_CAP, FOODS, SHOP_ITEMS, WEATHER_CHANCE,
   TASKS, TASKS_PER_DAY, STICKERS, LUNAR_DATES, MAX_CATS, NEW_CAT_PRICES, NEW_CAT_NEEDS_STAGE,
-  CONTEST_ENTRY_COINS, CONTEST_PRIZES, MAX_HELP,
+  CONTEST_ENTRY_COINS, CONTEST_PRIZES, MAX_HELP, BREAKABLE_SLOTS, ANGRY_BELOW, BREAK_EVERY_HOURS, REPAIR_SHARE,
 } from './config.js';
 
 const clamp = (v) => Math.max(0, Math.min(100, v));
@@ -37,6 +37,7 @@ export function newCat(id, name, fur, now) {
     lastPetAt: 0,
     seenStage: 'kitten',
     equipped: { hat: null, collar: null },
+    nextBreakAt: null, // when an angry cat breaks its next item
   };
 }
 
@@ -63,13 +64,63 @@ function changePerHour(state) {
   return change;
 }
 
-export function applyElapsed(state, now) {
+// When a cat first went below ANGRY_BELOW between `from` and now, or null if it isn't angry now.
+// Stats change in a straight line over time, so the moment can be worked out.
+function angrySince(before, after, perHour, from) {
+  let since = null;
+  for (const [stat, value] of Object.entries(after.stats)) {
+    if (value >= ANGRY_BELOW) continue;
+    const start = before.stats[stat];
+    const at = start < ANGRY_BELOW ? from : from + ((start - ANGRY_BELOW) / -perHour[stat]) * HOUR;
+    since = since === null ? at : Math.min(since, at);
+  }
+  return since;
+}
+
+// An angry cat breaks one working item, then another every BREAK_EVERY_HOURS while it stays angry.
+function breakThings(state, before, perHour, now, random) {
+  let { broken = [], news = [] } = state;
+  const cats = state.cats.map((cat) => {
+    const old = before.cats.find((c) => c.id === cat.id) ?? cat;
+    const since = angrySince(old, cat, perHour, before.lastSeen);
+    if (since === null) return { ...cat, nextBreakAt: null };
+    let next = cat.nextBreakAt ?? since;
+    while (next <= now) {
+      const breakable = breakableItems({ ...state, broken });
+      if (breakable.length) {
+        const item = breakable[Math.floor(random() * breakable.length)];
+        broken = [...broken, item];
+        news = [...news, { cat: cat.name, item }];
+      }
+      next += BREAK_EVERY_HOURS * HOUR;
+    }
+    return { ...cat, nextBreakAt: next };
+  });
+  return { ...state, cats, broken, news };
+}
+
+function breakableItems(state) {
+  const usable = usableItems(state);
+  return SHOP_ITEMS.filter((i) => BREAKABLE_SLOTS.includes(i.slot) && usable.includes(i.id)).map((i) => i.id);
+}
+
+export function applyElapsed(state, now, random = Math.random) {
   const hours = Math.max(0, now - state.lastSeen) / HOUR;
   const perHour = changePerHour(state);
   const cats = state.cats.map((cat) => withStats(cat, Object.fromEntries(
     Object.entries(perHour).map(([stat, change]) => [stat, change * hours]),
   )));
-  return { ...state, cats, lastSeen: Math.max(now, state.lastSeen) };
+  const caughtUp = breakThings({ ...state, cats }, state, perHour, Math.max(now, state.lastSeen), random);
+  return { ...caughtUp, lastSeen: Math.max(now, state.lastSeen) };
+}
+
+export const repairPrice = (itemId) => Math.ceil(SHOP_ITEMS.find((i) => i.id === itemId).price * REPAIR_SHARE);
+
+export function repair(state, itemId) {
+  if (!(state.broken ?? []).includes(itemId)) return { state, result: 'notBroken' };
+  const price = repairPrice(itemId);
+  if (state.coins < price) return { state, result: 'poor' };
+  return { state: { ...state, coins: state.coins - price, broken: state.broken.filter((id) => id !== itemId) }, result: 'ok' };
 }
 
 const LOW_NEED_MOOD = { hunger: 'hungry', energy: 'sleepy', cleanliness: 'dirty', happiness: 'grumpy' };
@@ -135,6 +186,7 @@ export function dayKey(time) {
 export function feed(state, foodId) {
   const food = FOODS.find((f) => f.id === foodId);
   if (state.asleep) return { state, result: 'asleep' };
+  if (!state.owned.includes('bowl')) return { state, result: 'noBowl' };
   if (selectedCat(state).stats.hunger >= FULL_HUNGER) return { state, result: 'full' };
   if (state.coins < food.price) return { state, result: 'poor' };
   const fed = updateCat(state, (c) => withStats(c, { hunger: food.hunger, happiness: food.happiness }));
@@ -150,6 +202,7 @@ export function pet(state, now, id = selectedCat(state).id) {
 
 // The litter box is shared, so cleaning helps every cat.
 export function clean(state) {
+  if (!state.owned.includes('litter')) return { state, result: 'noLitter' };
   const dirtiest = Math.min(...state.cats.map((c) => c.stats.cleanliness));
   const paid = dirtiest < CLEAN_COINS_BELOW ? CLEAN_COINS : 0;
   const cats = state.cats.map((c) => withStats(c, { cleanliness: 100 }));
