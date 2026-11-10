@@ -1,11 +1,11 @@
 // Draws the whole scene and drives what each cat is doing on screen.
 // Each cat is either in the room or out in the garden; the player looks at one of the two.
-import { CAT_SIZES, FURS, agedFur, drawSprite } from './sprites.js';
+import { FURS, agedFur, drawSprite } from './sprites.js';
 import { drawRoom, drawDarkness } from './room.js';
 import {
   drawGarden, drawGardenWeather, drawButterflies, stepButterflies, butterfliesOut, butterflyToChase, butterflyNear, scare, syncGardenFx,
 } from './garden.js';
-import { drawFrontCat, drawSideCat, FACES } from './cat.js';
+import { drawCat as drawCatSprite, FACES } from './cat.js';
 import { stepFx, drawFx, playFx } from './fx.js';
 import { createWalker } from './walker.js';
 import { SPOTS, START_SPOTS, SLEEP_SPOTS, PRESENT_SPOTS, GARDEN_SPOTS, RES, scratchPoint } from './layout.js';
@@ -266,33 +266,39 @@ function drawBug(ctx, x, g, now) {
   drawSprite(ctx, 'bug', x - 1, g - 3 - hop);
 }
 
+// When each cat stopped moving, so a cat that has stood still for a while sits down.
+const stillSince = new Map();
+const SIT_AFTER_MS = 3000;
+
+// Which way the cat is posed: walking and jumping as the walker says; when still, it stands, then sits;
+// asleep (or a newborn at rest) it lies curled up.
+function poseOf(state, cat, pose, stage, now) {
+  if (pose.mode !== 'sit') {
+    stillSince.delete(cat.id);
+    return { walk: 'walk', jump: 'jump', leap: 'jump', crouch: 'crouch' }[pose.mode];
+  }
+  if (!stillSince.has(cat.id)) stillSince.set(cat.id, now);
+  if (state.asleep || stage === 'newborn') return 'lying';
+  if (active(fx('scratch', cat.id), now)) return 'stand';
+  if (active(fx('itch', cat.id), now)) return 'itch';
+  return now - stillSince.get(cat.id) > SIT_AFTER_MS ? 'sit' : 'stand';
+}
+
 function drawCat(ctx, state, cat, pose, now, clock) {
   const stage = stageOf(cat, clock);
-  const size = CAT_SIZES[stage];
-  const face = faceFor(state, cat, now);
   const palette = stage === 'senior' ? agedFur(cat.fur) : FURS[cat.fur];
-
+  const posture = poseOf(state, cat, pose, stage, now);
   const scratching = !state.asleep && active(fx('scratch', cat.id), now);
-  if (pose.mode !== 'sit' || scratching) {
-    if (pose.mode === 'crouch' && bugs.has(cat.id)) drawBug(ctx, pose.x + pose.facing * 18, pose.g, now);
-    return drawSideCat(ctx, {
-      size, x: pose.x, ground: pose.g, facing: pose.facing, frame: pose.walkFrame,
-      jumping: pose.mode === 'jump' || pose.mode === 'leap', crouch: pose.mode === 'crouch',
-      scratch: scratching ? Math.floor(now / 150) % 2 : null,
-      face, equipped: cat.equipped, now, palette,
-    });
-  }
-
-  const lying = state.asleep || stage === 'newborn';
+  if (posture === 'crouch' && bugs.has(cat.id)) drawBug(ctx, pose.x + pose.facing * 18, pose.g, now);
   let lift = 0;
   if (active(fx('hop', cat.id), now)) lift = Math.round(Math.sin(remaining(fx('hop', cat.id), now, 500) * Math.PI) * 4);
   if (active(fx('purr', cat.id), now)) lift = Math.floor(now / 100) % 2;
-  return drawFrontCat(ctx, {
-    size, cx: pose.x, ground: pose.g - lift, face, lying,
+  return drawCatSprite(ctx, {
+    stage, x: pose.x, ground: pose.g - lift, facing: pose.facing, pose: posture, frame: pose.walkFrame,
+    face: faceFor(state, cat, now), now, equipped: cat.equipped, palette,
     look: active(fx('look', cat.id), now) ? (Math.floor(now / 800) % 2 ? 1 : -1) : 0,
-    itch: !lying && active(fx('itch', cat.id), now) ? Math.floor(now / 120) % 2 : null,
-    bob: lying ? Math.floor(now / 1200) % 2 : Math.floor(now / 700) % 2,
-    now, equipped: cat.equipped, palette,
+    scratch: scratching ? Math.floor(now / 150) % 2 : null,
+    itch: posture === 'itch' ? Math.floor(now / 120) % 2 : null,
   });
 }
 

@@ -33,15 +33,6 @@ export function agedFur(fur) {
   return agedCache.get(fur);
 }
 
-// Body sizes per growth stage, in room pixels. `side` is the walking (side view) shape.
-export const CAT_SIZES = {
-  newborn: { hw: 13, hh: 10, bw: 9, bh: 6, ear: 3, side: { L: 11, H: 6, leg: 2, hw: 10, hh: 9 } },
-  kitten: { hw: 15, hh: 12, bw: 11, bh: 8, ear: 4, side: { L: 14, H: 7, leg: 3, hw: 11, hh: 10 } },
-  young: { hw: 17, hh: 13, bw: 15, bh: 11, ear: 4, side: { L: 19, H: 9, leg: 4, hw: 13, hh: 11 } },
-  adult: { hw: 19, hh: 14, bw: 19, bh: 14, ear: 5, side: { L: 24, H: 11, leg: 4, hw: 15, hh: 12 } },
-  mature: { hw: 20, hh: 15, bw: 21, bh: 15, ear: 5, side: { L: 26, H: 12, leg: 4, hw: 16, hh: 13 } },
-  senior: { hw: 20, hh: 15, bw: 22, bh: 14, ear: 5, side: { L: 26, H: 12, leg: 4, hw: 16, hh: 13 } },
-};
 
 export const SPRITES = {
   hat_bow: {
