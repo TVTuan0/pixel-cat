@@ -6,7 +6,7 @@ import { drawScene, ROOM_W, ROOM_H } from './render/canvas.js';
 import { entryToScene } from './contestRoom.js';
 import { runFishGame, drawFishGameIdle } from './minigame/fish.js';
 import { runMouseGame, drawMouseGameIdle } from './minigame/mouse.js';
-import { FOODS, SHOP_ITEMS, FISH_GAME_SECONDS, MOUSE_GAME_SECONDS, EQUIP_SLOTS, STICKERS, CONTEST_ENTRY_COINS, DAY } from './config.js';
+import { FOODS, FULL_HUNGER, SHOP_ITEMS, FISH_GAME_SECONDS, MOUSE_GAME_SECONDS, EQUIP_SLOTS, STICKERS, CONTEST_ENTRY_COINS, DAY } from './config.js';
 import { ageInDays, stageOf, dailyTasks, taskProgress, selectedCat, needsCare, wornItem, nextCatOffer, repairPrice } from './rules.js';
 
 const $ = (id) => document.getElementById(id);
@@ -199,15 +199,31 @@ export function isSheetOpen() {
   return sheet.open;
 }
 
+// Food menu. With more than one cat, the player can feed just the selected cat or the whole family.
+// onPick(foodId, everyone).
 export function openFeed(state, onPick) {
-  const rows = FOODS.map((food) =>
-    el('button', { class: 'row btn', type: 'button', onclick: () => onPick(food.id) },
-      el('span', { class: 'icon' }, spriteCanvas(`food_${food.id}`, 4)),
-      el('span', { class: 'grow' }, t(`food_${food.id}`)),
-      priceTag(food.price),
-    ),
-  );
-  openSheet(t('feed'), el('div', { class: 'list' }, rows));
+  const hungry = state.cats.filter((c) => c.stats.hunger < FULL_HUNGER).length;
+  let everyone = false;
+  const list = el('div', { class: 'list' });
+  const draw = () => {
+    const rows = FOODS.map((food) =>
+      el('button', { class: 'row btn', type: 'button', onclick: () => onPick(food.id, everyone) },
+        el('span', { class: 'icon' }, spriteCanvas(`food_${food.id}`, 4)),
+        el('span', { class: 'grow' }, t(`food_${food.id}`)),
+        everyone && food.price > 0 ? el('span', { class: 'note' }, `${hungry} ×`) : null,
+        priceTag(food.price),
+      ),
+    );
+    const choice = state.cats.length > 1
+      ? el('div', { class: 'seg' },
+        el('button', { class: `btn small ${everyone ? '' : 'primary'}`, type: 'button', onclick: () => { everyone = false; draw(); } }, t('feedOne', { name: selectedCat(state).name })),
+        el('button', { class: `btn small ${everyone ? 'primary' : ''}`, type: 'button', onclick: () => { everyone = true; draw(); } }, t('feedEveryone', { n: hungry })),
+      )
+      : null;
+    list.replaceChildren(...[choice, ...rows].filter(Boolean));
+  };
+  draw();
+  openSheet(t('feed'), list);
 }
 
 // What an item does for the cats, e.g. "Joy drops 15% slower", or null for looks-only items.

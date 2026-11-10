@@ -41,6 +41,10 @@ export default {
 
   feedOk: 'Ngon quá!',
   feedFull: 'No rồi!',
+  feedOne: 'Chỉ {name}',
+  feedEveryone: 'Cả nhà ({n})',
+  feedAllOk: 'Cả nhà ăn ngon lành!',
+  feedAllFull: 'Cả nhà đều no rồi.',
   noBowl: 'Hãy mua bát ăn trong cửa hàng trước nhé.',
   noLitter: 'Hãy mua khay cát trong cửa hàng trước nhé.',
   poor: 'Không đủ xu.',

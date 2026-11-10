@@ -41,6 +41,10 @@ export default {
 
   feedOk: 'Yum!',
   feedFull: "I'm full!",
+  feedOne: 'Only {name}',
+  feedEveryone: 'Everyone ({n})',
+  feedAllOk: 'Dinner for everyone!',
+  feedAllFull: 'Everyone is full.',
   noBowl: 'Buy a food bowl in the shop first.',
   noLitter: 'Buy a litter box in the shop first.',
   poor: 'Not enough coins.',

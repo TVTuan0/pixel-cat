@@ -561,6 +561,46 @@ function drawBowl(ctx, now) {
   }
 }
 
+// The floor gets dirtier as the dirtiest cat's cleanliness drops: stains, then muddy paw prints, then messes with flies.
+const DIRT = { stains: 40, paws: 25, mess: 10 };
+const MUD = 'rgba(60, 40, 22, 0.5)';
+function drawFloorDirt(ctx, cleanliness) {
+  if (cleanliness >= DIRT.stains) return;
+  ctx.fillStyle = MUD;
+  for (const [x, y, w, h] of [[28, 92, 12, 4], [114, 98, 14, 4], [70, 115, 10, 3], [136, 111, 9, 3], [84, 87, 8, 3]]) {
+    ctx.fillRect(x, y, w, h);
+    ctx.fillRect(x + 1, y - 1, w - 2, 1);
+  }
+  if (cleanliness >= DIRT.paws) return;
+  // A trail of muddy paw prints across the room.
+  ctx.fillStyle = 'rgba(60, 40, 22, 0.55)';
+  for (let i = 0; i < 9; i++) {
+    const x = 36 + i * 11;
+    const y = 104 + (i % 2) * 4 - Math.round(Math.sin(i / 2) * 3);
+    ctx.fillRect(x, y, 2, 2);
+    ctx.fillRect(x - 1, y - 2, 1, 1);
+    ctx.fillRect(x + 1, y - 2, 1, 1);
+    ctx.fillRect(x + 3, y - 1, 1, 1);
+  }
+}
+
+// Little messes on the floor, with flies buzzing around them. Drawn over the furniture so they show.
+const MESSES = [[118, 106], [10, 104], [86, 113]];
+function drawMesses(ctx, cleanliness, now) {
+  if (cleanliness >= DIRT.mess) return;
+  for (const [i, [x, y]] of MESSES.entries()) {
+    rect(ctx, x - 1, y + 3, 8, 2, '#4a2e16');
+    rect(ctx, x, y + 1, 6, 2, '#6b4420');
+    rect(ctx, x + 1, y - 1, 4, 2, '#6b4420');
+    rect(ctx, x + 2, y - 2, 2, 1, '#6b4420');
+    rect(ctx, x + 2, y, 1, 1, '#9a6a3e');
+    for (let f = 0; f < 2; f++) {
+      const a = now / (300 + f * 90) + i * 2 + f * 3;
+      rect(ctx, x + 2 + Math.round(Math.cos(a) * 4), y - 4 + Math.round(Math.sin(a * 1.3) * 2), 1, 1, '#1a1a2e');
+    }
+  }
+}
+
 // Everything behind the cat. Only items the player owns are in the room.
 export function drawRoom(ctx, state, now, clock) {
   const time = new Date(clock);
@@ -577,6 +617,8 @@ export function drawRoom(ctx, state, now, clock) {
 
   drawWall(ctx, state.equipped.wall);
   drawFloor(ctx, state.equipped.floor);
+  const cleanliness = Math.min(...state.cats.map((c) => c.stats.cleanliness));
+  drawFloorDirt(ctx, cleanliness);
   item('decor_lights', () => drawFairyLights(ctx, now, false, broken.has('decor_lights')));
 
   drawWindow(ctx, time, now);
@@ -604,10 +646,11 @@ export function drawRoom(ctx, state, now, clock) {
   item('decor_beanbag', () => drawBeanbag(ctx), { damage: () => brokenBeanbag(ctx) });
   if (has('bowl')) drawBowl(ctx, now);
   item('auto_feeder', () => drawSprite(ctx, 'auto_feeder', 61, 99), { brokenDraw: () => drawBrokenFeeder(ctx) });
-  if (has('litter')) drawLitter(ctx, Math.min(...state.cats.map((c) => c.stats.cleanliness)), now);
+  if (has('litter')) drawLitter(ctx, cleanliness, now);
   item('auto_litter', () => drawSprite(ctx, 'auto_litter', 138, 94), { damage: () => brokenLitterHood(ctx) });
   item('toy_yarn', () => drawSprite(ctx, 'toy_yarn', 80, 108), { damage: () => brokenYarn(ctx, now) });
   item('toy_mouse', () => drawSprite(ctx, 'toy_mouse', 122, 112, Math.floor(now / 2000) % 2 === 0), { damage: () => brokenToyMouse(ctx) });
+  drawMesses(ctx, cleanliness, now);
 }
 
 // Darkens the room when the lights are off; window, lamp and fairy lights still glow.

@@ -20,6 +20,7 @@ const ACTIONS = [
   ['+1000 xu', (s) => ({ ...s, coins: s.coins + 1000 })],
   ['Mèo giận ngay', angry],
   ['Nhảy 6 tiếng', (s) => jump(s, 6 * HOUR)],
+  ['Phòng bẩn', (s) => ({ ...s, cats: s.cats.map((c) => ({ ...c, stats: { ...c.stats, cleanliness: 5 } })) })],
   ['Lớn thêm 4 ngày', (s) => ({ ...s, cats: s.cats.map((c) => ({ ...c, adoptedAt: c.adoptedAt - 4 * DAY })) })],
   // Moves the last gift to yesterday, so the streak goes on and today's gift and tasks start over.
   ['Sang ngày mới', (s) => ({ ...s, lastGiftDay: s.lastGiftDay ? dayKey(Date.now() - DAY) : null, daily: null })],

@@ -1,7 +1,7 @@
 import { t, setLanguage, guessLanguage } from './i18n/index.js';
 import { createState, loadState, saveState, clearState } from './state.js';
 import {
-  applyElapsed, feed, pet, clean, toggleSleep, canPlay, finishMiniGame,
+  applyElapsed, feed, feedAll, pet, clean, toggleSleep, canPlay, finishMiniGame,
   buy, equip, repair, claimDailyGift, stageOf, ageInDays, recordAction, claimTask, checkStickers,
   selectCat, selectedCat, nextCatOffer, adoptCat, rewardContestEntry, claimContestPrize, pickUpPresent,
 } from './rules.js';
@@ -61,7 +61,8 @@ const handlers = {
   feed() {
     if (state.asleep) return result(t('asleep'), sfx.no);
     if (!state.owned.includes('bowl')) return result(t('noBowl'), sfx.no);
-    openFeed(state, (foodId) => {
+    openFeed(state, (foodId, everyone) => {
+      if (everyone) return feedEveryone(foodId);
       const r = feed(state, foodId);
       if (r.result === 'poor') return result(t('poor'), sfx.no);
       closeSheet();
@@ -394,6 +395,18 @@ async function checkEvents() {
     });
   }
   eventsRunning = false;
+}
+
+function feedEveryone(foodId) {
+  const r = feedAll(state, foodId);
+  if (r.result === 'poor') return result(t('poor'), sfx.no);
+  closeSheet();
+  if (r.result === 'full') return result(t('feedAllFull'), sfx.no);
+  commit(r.state);
+  r.fed.forEach((id) => feedCat(id));
+  result(t('feedAllOk'), sfx.eat);
+  const isTreat = FOODS.find((f) => f.id === foodId).price > 0;
+  record(['feed', r.fed.length], ...(isTreat ? [['treat', r.fed.length]] : []));
 }
 
 function pickUp(index) {

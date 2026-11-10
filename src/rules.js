@@ -238,6 +238,18 @@ export function feed(state, foodId) {
   return { state: { ...fed, coins: state.coins - food.price + food.coins }, result: 'ok' };
 }
 
+// Feeds every cat that isn't full with the same food, paying for each. `fed` lists the ids of cats that ate.
+export function feedAll(state, foodId) {
+  const food = FOODS.find((f) => f.id === foodId);
+  if (state.asleep) return { state, result: 'asleep', fed: [] };
+  if (!state.owned.includes('bowl')) return { state, result: 'noBowl', fed: [] };
+  const fed = state.cats.filter((c) => c.stats.hunger < FULL_HUNGER).map((c) => c.id);
+  if (!fed.length) return { state, result: 'full', fed };
+  if (state.coins < food.price * fed.length) return { state, result: 'poor', fed: [] };
+  const cats = state.cats.map((c) => (fed.includes(c.id) ? withStats(c, { hunger: food.hunger, happiness: food.happiness }) : c));
+  return { state: { ...state, cats, coins: state.coins + (food.coins - food.price) * fed.length }, result: 'ok', fed };
+}
+
 export function pet(state, now, id = selectedCat(state).id) {
   if (state.asleep) return { state, result: 'asleep' };
   const cat = state.cats.find((c) => c.id === id);
