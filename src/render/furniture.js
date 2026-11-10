@@ -118,23 +118,31 @@ export function drawCurtains(ctx, now) {
   }
 }
 
+// The wall clock, drawn in room units (one pixel each) so its round face stays smooth on the chunky grid.
 export function drawClock(ctx, clock) {
-  const cx = 226, cy = 38;
-  fineShape(ctx, cx - 15, cy - 15, 30, 30, '#fffaf0', WOOD, { round: 2 });
-  fineShape(ctx, cx - 14, cy - 14, 28, 28, '#fffaf0', '#c89a60', { round: 2 });
-  for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * Math.PI * 2;
-    const len = i % 3 === 0 ? 2 : 1;
-    F(ctx, Math.round(cx + Math.sin(a) * 11), Math.round(cy - Math.cos(a) * 11), len, len, WOOD_DARK);
-  }
+  const cx = 113, cy = 19;
+  const disc = (r, color) => {
+    ctx.fillStyle = color;
+    for (let y = -r; y <= r; y++) {
+      const half = Math.round(Math.sqrt(r * r - y * y + r * 0.8));
+      ctx.fillRect(cx - half, cy + y, half * 2 + 1, 1);
+    }
+  };
+  disc(8, WOOD_DARK);
+  disc(7, WOOD);
+  disc(6, '#fffaf0');
+  ctx.fillStyle = WOOD_DARK;
+  for (const [dx, dy] of [[0, -5], [5, 0], [0, 5], [-5, 0]]) ctx.fillRect(cx + dx, cy + dy, 1, 1);
+  const hand = (angle, length, color) => {
+    ctx.fillStyle = color;
+    for (let i = 1; i <= length; i++) ctx.fillRect(Math.round(cx + Math.sin(angle) * i), Math.round(cy - Math.cos(angle) * i), 1, 1);
+  };
   const minutes = clock.getMinutes();
   const hours = (clock.getHours() % 12) + minutes / 60;
-  const ha = (hours / 12) * Math.PI * 2;
-  const ma = (minutes / 60) * Math.PI * 2;
-  fineLine(ctx, cx, cy, Math.round(cx + Math.sin(ha) * 6), Math.round(cy - Math.cos(ha) * 6), '#2a1d3a');
-  fineLine(ctx, cx + 1, cy, Math.round(cx + 1 + Math.sin(ha) * 6), Math.round(cy - Math.cos(ha) * 6), '#2a1d3a');
-  fineLine(ctx, cx, cy, Math.round(cx + Math.sin(ma) * 10), Math.round(cy - Math.cos(ma) * 10), '#c8553d');
-  F(ctx, cx - 1, cy - 1, 3, 3, '#2a1d3a');
+  hand((minutes / 60) * Math.PI * 2, 5, '#c8553d');
+  hand((hours / 12) * Math.PI * 2, 3, '#2a1d3a');
+  ctx.fillStyle = '#2a1d3a';
+  ctx.fillRect(cx, cy, 1, 1);
 }
 
 // The garden door, locked until bought; then its glass shows the green garden.

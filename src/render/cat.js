@@ -342,22 +342,27 @@ function drawFrontSit(b, { ground, face, equipped, itch }) {
 // ---- Curled up asleep ----
 
 function drawCurled(b, { ground, now, face, equipped }) {
-  const w = b.L, h = Math.round(b.H * 1.5);
+  const w = Math.round(b.L * 0.85), h = Math.round(b.H * 1.7);
   const bx = -Math.round(w / 2) + 2;
   const breathe = Math.floor(now / 1200) % 2;
   shape(bx, ground - h - breathe, w, h + breathe, C.fur, {
-    round: 1.9,
+    round: 2,
     inside: () => {
-      P(bx, ground - h - breathe, w, 2, C.shade);
-      if (striped()) for (let x = bx + 3; x < bx + w - 2; x += 3) P(x, ground - h, 1, h - 3, C.stripe);
+      P(bx, ground - h - breathe, w, 3, C.shade);
+      P(bx + w - 3, ground - h, 3, h, C.shade);
+      // Stripes bend round the curled back: longer in the middle, shorter at the ends.
+      if (striped()) for (let x = bx + 3; x < bx + w - 2; x += 3) {
+        const mid = 1 - Math.abs((x - bx) / w - 0.5) * 2;
+        P(x, ground - h, 1, Math.round(2 + mid * (h - 6)), C.stripe);
+      }
       if (C.patch) P(bx + 3, ground - h + 1, 5, 4, C.patch);
     },
   });
-  const tail = thickLine([[bx + w - 2, ground - 2], [bx + 4, ground - 2]], pointsOr(C.fur));
+  const tail = thickLine([[bx + w - 2, ground - 4], [bx + w - 4, ground - 2], [bx + 4, ground - 2]], pointsOr(C.fur));
   if (striped()) tail.forEach(([x, y], i) => i % 3 === 2 && P(x, y, 1, 1, C.stripe));
   const hw = b.hw + (b.hw % 2 === 0 ? 1 : 0);
   const hh = b.hh - 1;
-  const hx = bx - Math.round(hw * 0.4), hy = ground - hh;
+  const hx = bx - Math.round(hw * 0.3), hy = ground - hh;
   drawFrontHead(hx, hy, hw, hh, b, face, equipped);
   return { left: hx - 3, right: bx + w + 1, top: hy - b.ear - 2, hx, hy, hw };
 }

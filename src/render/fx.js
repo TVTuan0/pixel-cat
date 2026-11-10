@@ -25,20 +25,18 @@ const playing = [];
 // Effects that run for a long time (weather, butterflies, birds), by name, so each starts once.
 const ambient = new Map();
 
-let frame = null, image = null, layer = null, chunky = null;
+let frame = null, image = null, small = null, chunky = null;
 function surfaces() {
   if (!frame) {
     frame = createFrame(SCENE_W, SCENE_H);
     image = new ImageData(SCENE_W, SCENE_H);
-    layer = document.createElement('canvas');
-    layer.width = SCENE_W;
-    layer.height = SCENE_H;
     // Effects are shown at half size, then blown up, so their pixels match the chunky 8-bit art.
+    small = new ImageData(SCENE_W / RES, SCENE_H / RES);
     chunky = document.createElement('canvas');
     chunky.width = SCENE_W / RES;
     chunky.height = SCENE_H / RES;
   }
-  return layer.getContext('2d');
+  return chunky.getContext('2d');
 }
 
 let clock = 0;
@@ -94,15 +92,41 @@ export function drawFx(ctx, view, front) {
     p.fx.draw(frame, 'front');
   }
   composite(frame, image.data, null);
-  out.putImageData(image, 0, 0);
-  const small = chunky.getContext('2d');
-  small.imageSmoothingEnabled = false;
-  small.clearRect(0, 0, chunky.width, chunky.height);
-  small.drawImage(layer, 0, 0, chunky.width, chunky.height);
+  shrink(image, small);
+  out.putImageData(small, 0, 0);
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(chunky, 0, 0);
   ctx.restore();
+}
+
+// Each 2×2 block of `from` becomes one pixel of `to`: the most common solid color, or empty if the block is
+// mostly empty. Keeps shapes whole where taking one corner pixel would leave holes.
+function shrink(from, to) {
+  const src = from.data, dst = to.data;
+  dst.fill(0);
+  for (let y = 0; y < to.height; y++) {
+    for (let x = 0; x < to.width; x++) {
+      let best = -1, bestCount = 0, solid = 0;
+      const seen = [];
+      for (let k = 0; k < 4; k++) {
+        const i = ((y * 2 + (k >> 1)) * from.width + x * 2 + (k & 1)) * 4;
+        if (src[i + 3] < 100) continue;
+        solid++;
+        const key = (src[i] << 16) | (src[i + 1] << 8) | src[i + 2];
+        let count = 1;
+        for (const j of seen) if (((src[j] << 16) | (src[j + 1] << 8) | src[j + 2]) === key) count++;
+        seen.push(i);
+        if (count > bestCount) [best, bestCount] = [i, count];
+      }
+      if (solid < 2) continue;
+      const o = (y * to.width + x) * 4;
+      dst[o] = src[best];
+      dst[o + 1] = src[best + 1];
+      dst[o + 2] = src[best + 2];
+      dst[o + 3] = src[best + 3];
+    }
+  }
 }
 
 // Clears everything, e.g. when the game starts over.
