@@ -94,9 +94,11 @@ const handlers = {
   clean() {
     const r = clean(state);
     if (r.result === 'noLitter') return result(t('noLitter'), sfx.no);
+    if (r.result === 'clean') return result(t('cleanAlready'), sfx.tap);
     commit(r.state);
     playEffect('sparkle', 1200);
-    result(r.coins ? t('cleanCoins', { n: r.coins }) : t('cleanOk'), sfx.clean);
+    const text = r.done ? t('cleanOk') : t('cleanMore');
+    result(r.coins ? `${text} +${r.coins} ${t('coinsWord')}` : text, sfx.clean);
     record(['clean', 1]);
   },
 

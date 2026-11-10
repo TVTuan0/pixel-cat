@@ -3,7 +3,7 @@
 import {
   HOUR, DAY, DECAY_PER_HOUR, SLEEP_ENERGY_PER_HOUR, LOW_STAT, HAPPY_AVERAGE,
   FULL_HUNGER, STAGES, PET_COOLDOWN_MS, PET_HAPPINESS, CLEAN_COINS_BELOW,
-  CLEAN_COINS, PLAY_MIN_ENERGY, PLAY_ENERGY_COST, GIFT_BASE_COINS,
+  CLEAN_COINS, CLEAN_STEP, PLAY_MIN_ENERGY, PLAY_ENERGY_COST, GIFT_BASE_COINS,
   GIFT_STREAK_BONUS, GIFT_STREAK_CAP, FOODS, SHOP_ITEMS, WEATHER_CHANCE,
   TASKS, TASKS_PER_DAY, STICKERS, LUNAR_DATES, MAX_CATS, NEW_CAT_PRICES, NEW_CAT_NEEDS_STAGE,
   CONTEST_ENTRY_COINS, CONTEST_PRIZES, MAX_HELP, BREAKABLE_SLOTS, ANGRY_BELOW, BREAK_EVERY_MINUTES, REPAIR_SHARE,
@@ -257,13 +257,16 @@ export function pet(state, now, id = selectedCat(state).id) {
   return { state: updateCat(state, (c) => ({ ...withStats(c, { happiness: PET_HAPPINESS }), lastPetAt: now }), id), result: 'ok' };
 }
 
-// The litter box is shared, so cleaning helps every cat.
+// The litter box and floor are shared, so cleaning helps every cat. Each go cleans CLEAN_STEP more.
+// result: ok | clean (nothing left to clean) | noLitter. `done`: the room is spotless now.
 export function clean(state) {
   if (!state.owned.includes('litter')) return { state, result: 'noLitter' };
   const dirtiest = Math.min(...state.cats.map((c) => c.stats.cleanliness));
+  if (dirtiest >= 99) return { state, result: 'clean', coins: 0 }; // stats start dropping right after a clean-up
   const paid = dirtiest < CLEAN_COINS_BELOW ? CLEAN_COINS : 0;
-  const cats = state.cats.map((c) => withStats(c, { cleanliness: 100 }));
-  return { state: { ...state, cats, coins: state.coins + paid }, result: 'ok', coins: paid };
+  const cats = state.cats.map((c) => withStats(c, { cleanliness: CLEAN_STEP }));
+  const done = cats.every((c) => c.stats.cleanliness >= 100);
+  return { state: { ...state, cats, coins: state.coins + paid }, result: 'ok', coins: paid, done };
 }
 
 export function toggleSleep(state) {

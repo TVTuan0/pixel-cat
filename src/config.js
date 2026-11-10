@@ -31,8 +31,9 @@ export const STAGES = [
 export const PET_COOLDOWN_MS = 5000;
 export const PET_HAPPINESS = 4;
 
-export const CLEAN_COINS_BELOW = 70; // cleaning only pays when the box is fairly dirty
-export const CLEAN_COINS = 2;
+export const CLEAN_STEP = 25; // each clean-up raises cleanliness this much, so a very dirty room takes a few goes
+export const CLEAN_COINS_BELOW = 70; // cleaning only pays when the room is fairly dirty
+export const CLEAN_COINS = 1; // per clean-up
 
 export const PLAY_MIN_ENERGY = 15;
 export const PLAY_ENERGY_COST = 10;

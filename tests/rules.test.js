@@ -4,7 +4,7 @@ import {
   applyElapsed, moodOf, stageOf, dayKey, feed, pet, clean, toggleSleep,
   finishMiniGame, buy, equip, claimDailyGift, weatherOf, selectedCat, selectCat, nextCatOffer, adoptCat, newCat,
 } from '../src/rules.js';
-import { HOUR, DAY, FOODS, START_COINS, NEW_CAT_PRICES, MAX_CATS } from '../src/config.js';
+import { HOUR, DAY, FOODS, START_COINS, NEW_CAT_PRICES, MAX_CATS, CLEAN_STEP, CLEAN_COINS } from '../src/config.js';
 
 const T0 = new Date(2026, 10, 8, 10, 0, 0).getTime();
 const fresh = () => ({ ...createState('Mochi', T0, 'en'), owned: ['bowl', 'litter', 'cushion'] });
@@ -111,11 +111,27 @@ describe('pet', () => {
 });
 
 describe('clean', () => {
-  it('fills cleanliness and pays only when it was dirty', () => {
-    const dirty = clean(withStats({ cleanliness: 20 }));
-    expect(cat(dirty.state).stats.cleanliness).toBe(100);
-    expect(dirty.state.coins).toBe(START_COINS + 2);
+  it('cleans a bit at a time, so a very dirty room takes a few goes', () => {
+    let s = withStats({ cleanliness: 5 });
+    const steps = [];
+    for (let i = 0; i < 4; i++) {
+      s = clean(s).state;
+      steps.push(cat(s).stats.cleanliness);
+    }
+    expect(steps).toEqual([5 + CLEAN_STEP, 5 + 2 * CLEAN_STEP, 5 + 3 * CLEAN_STEP, 100]);
+  });
+
+  it('pays a coin for each go while the room is still fairly dirty', () => {
+    expect(clean(withStats({ cleanliness: 20 })).state.coins).toBe(START_COINS + CLEAN_COINS);
     expect(clean(withStats({ cleanliness: 90 })).state.coins).toBe(START_COINS);
+  });
+
+  it('has nothing to do when everything is already clean', () => {
+    const r = clean(withStats({ cleanliness: 100 }));
+    expect(r.result).toBe('clean');
+    // A moment after cleaning, the stat has already dropped a tiny bit; that still counts as clean.
+    expect(clean(withStats({ cleanliness: 99.9 })).result).toBe('clean');
+    expect(r.state.coins).toBe(START_COINS);
   });
 });
 
@@ -230,8 +246,8 @@ describe('more cats', () => {
     const s = withCats(3);
     const dirty = { ...s, cats: s.cats.map((c, i) => ({ ...c, stats: { ...c.stats, cleanliness: 10 * (i + 1) } })) };
     const r = clean(dirty);
-    expect(r.state.cats.every((c) => c.stats.cleanliness === 100)).toBe(true);
-    expect(r.coins).toBe(2);
+    expect(r.state.cats.map((c) => c.stats.cleanliness)).toEqual([10 + CLEAN_STEP, 20 + CLEAN_STEP, 30 + CLEAN_STEP]);
+    expect(r.coins).toBe(CLEAN_COINS);
   });
 
   it('each cat wears its own hat; wallpaper is for the room', () => {

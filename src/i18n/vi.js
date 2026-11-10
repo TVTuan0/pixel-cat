@@ -50,8 +50,10 @@ export default {
   poor: 'Không đủ xu.',
   asleep: 'Suỵt, mèo đang ngủ.',
   petOk: 'Rừ rừ...',
+  cleanMore: 'Sạch hơn rồi, dọn tiếp nào!',
+  cleanAlready: 'Đã sạch bong rồi!',
+  coinsWord: 'xu',
   cleanOk: 'Sạch bong!',
-  cleanCoins: 'Sạch bong! +{n} xu',
   tired: 'Mệt quá, không chơi nổi.',
   bought: 'Đã mua!',
 

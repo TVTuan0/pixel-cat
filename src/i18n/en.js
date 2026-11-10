@@ -50,8 +50,10 @@ export default {
   poor: 'Not enough coins.',
   asleep: 'Shh, sleeping.',
   petOk: 'Purrr...',
+  cleanMore: 'A bit cleaner. Keep going!',
+  cleanAlready: 'Already spotless!',
+  coinsWord: 'coins',
   cleanOk: 'All clean!',
-  cleanCoins: 'All clean! +{n} coins',
   tired: 'Too tired to play.',
   bought: 'Bought!',
 
