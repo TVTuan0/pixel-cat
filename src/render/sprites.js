@@ -2,13 +2,17 @@
 
 const FACE_COLORS = { pink: '#ff8fa3', eye: '#2a1d1d', white: '#ffffff', blush: '#ffb3c1' };
 
-// One palette per fur. `patch` adds the dark spots of a calico.
+// One palette per fur. `shade` darkens the back and sides for shape. `stripes` draws tabby stripes,
+// `patch` the dark spots of a calico, and `points` the dark face, ears, paws and tail of a Siamese.
 export const FURS = {
-  orange: { ...FACE_COLORS, outline: '#4a2c2a', fur: '#f2a65a', furLight: '#ffe0b8', stripe: '#d9783a' },
-  grey: { ...FACE_COLORS, outline: '#2f3340', fur: '#9aa0ad', furLight: '#dfe3ea', stripe: '#6f7583' },
-  black: { ...FACE_COLORS, outline: '#15151d', fur: '#3a3a48', furLight: '#6a6a7a', stripe: '#2a2a36', eye: '#ffd84a' },
-  white: { ...FACE_COLORS, outline: '#6b5d55', fur: '#f7f4ee', furLight: '#ffffff', stripe: '#e3ddd2' },
-  calico: { ...FACE_COLORS, outline: '#4a2c2a', fur: '#f7f4ee', furLight: '#ffffff', stripe: '#f2a65a', patch: '#3a3a48' },
+  orange: { ...FACE_COLORS, outline: '#4a2c2a', fur: '#f2a65a', furLight: '#ffe0b8', stripe: '#d9783a', shade: '#de8f48', stripes: true },
+  grey: { ...FACE_COLORS, outline: '#2f3340', fur: '#9aa0ad', furLight: '#dfe3ea', stripe: '#6f7583', shade: '#878d9b' },
+  black: { ...FACE_COLORS, outline: '#15151d', fur: '#3a3a48', furLight: '#6a6a7a', stripe: '#2a2a36', shade: '#30303c', eye: '#ffd84a' },
+  white: { ...FACE_COLORS, outline: '#6b5d55', fur: '#f7f4ee', furLight: '#ffffff', stripe: '#e3ddd2', shade: '#e6e0d4' },
+  calico: { ...FACE_COLORS, outline: '#4a2c2a', fur: '#f7f4ee', furLight: '#ffffff', stripe: '#f2a65a', shade: '#e6e0d4', patch: '#3a3a48' },
+  tuxedo: { ...FACE_COLORS, outline: '#101016', fur: '#2a2a34', furLight: '#ffffff', stripe: '#2a2a34', shade: '#1f1f28', eye: '#8fd65a' },
+  tabby: { ...FACE_COLORS, outline: '#3a2a1c', fur: '#a8845c', furLight: '#ecdcc2', stripe: '#5a4028', shade: '#94724c', stripes: true },
+  siamese: { ...FACE_COLORS, outline: '#4a3a30', fur: '#efe2c8', furLight: '#fbf4e6', stripe: '#4a3428', shade: '#ddcdb0', points: '#4a3428', eye: '#5ab0ff' },
 };
 
 

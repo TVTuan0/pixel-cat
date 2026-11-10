@@ -166,7 +166,7 @@ export const MAX_CATS = 5;
 export const NEW_CAT_PRICES = [50, 100, 150, 200]; // 2nd, 3rd, 4th, 5th cat
 export const NEW_CAT_NEEDS_STAGE = 'young';
 
-export const FUR_IDS = ['orange', 'grey', 'black', 'white', 'calico'];
+export const FUR_IDS = ['orange', 'grey', 'black', 'white', 'calico', 'tuxedo', 'tabby', 'siamese'];
 
 // Weekly "Cutest Room" contest.
 export const CONTEST_ENTRY_COINS = 5; // once a week, for joining

@@ -166,6 +166,9 @@ export default {
   fur_black: 'Mèo đen',
   fur_white: 'Mèo trắng',
   fur_calico: 'Mèo tam thể',
+  fur_tuxedo: 'Mèo Tuxedo',
+  fur_tabby: 'Mèo mướp',
+  fur_siamese: 'Mèo Xiêm',
 
   inviteTitle: 'Mời bạn bè',
   inviteButton: 'Chia sẻ link game',

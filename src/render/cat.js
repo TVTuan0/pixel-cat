@@ -10,6 +10,16 @@ function patch(ctx, x, y, w, h) {
   if (C.patch) rect(ctx, x, y, w, h, C.patch);
 }
 
+// The dark face, ears, paws and tail of a Siamese; other furs use their normal color.
+const pointsOr = (color) => C.points ?? color;
+
+// A soft shadow on the ground under a cat.
+function groundShadow(ctx, cx, ground, w) {
+  ctx.fillStyle = 'rgba(30, 18, 8, 0.25)';
+  ctx.fillRect(Math.round(cx - w / 2) + 1, ground - 1, w - 2, 2);
+  ctx.fillRect(Math.round(cx - w / 2) + 3, ground + 1, w - 6, 1);
+}
+
 export const FACES = {
   happy: { eyes: 'happy', mouth: 'w', blush: true },
   okay: { eyes: 'open', mouth: 'w' },
@@ -25,7 +35,7 @@ const COLLAR_COLORS = { collar_red: '#e8384f', collar_blue: '#3a7bff', collar_go
 
 function drawTail(ctx, baseX, baseY, points) {
   for (const [dx, dy] of points) rect(ctx, baseX + dx - 1, baseY + dy - 1, 3, 3, C.outline);
-  points.forEach(([dx, dy], i) => rect(ctx, baseX + dx, baseY + dy, 1, 1, i === points.length - 1 ? C.stripe : C.fur));
+  points.forEach(([dx, dy], i) => rect(ctx, baseX + dx, baseY + dy, 1, 1, pointsOr(i === points.length - 1 ? C.stripe : C.fur)));
 }
 
 function drawEars(ctx, headX, headY, hw, ear) {
@@ -34,7 +44,7 @@ function drawEars(ctx, headX, headY, hw, ear) {
     const y = headY - ear + 1 + i;
     for (const x of [headX + 1, headX + hw - 1 - w]) {
       rect(ctx, x, y, w, 1, C.outline);
-      if (i > 0) rect(ctx, x + 1, y, w - 2, 1, C.fur);
+      if (i > 0) rect(ctx, x + 1, y, w - 2, 1, pointsOr(C.fur));
       if (i > 1) rect(ctx, x + 2 - (x > headX + 1 ? 1 : 0), y, Math.max(0, w - 4), 1, C.pink);
     }
   }
@@ -108,6 +118,7 @@ export function drawFrontCat(ctx, { size, cx, ground, face, lying, look, bob, no
   const headX = cx - Math.floor(hw / 2);
   const headY = lying ? bodyY - hh + 6 + bob : bodyY - hh + 3 + bob;
 
+  groundShadow(ctx, cx, ground, bw + 6);
   const sway = lying ? 0 : [0, 1, 1, 0, -1, -1][Math.floor(now / 250) % 6];
   const tail = lying
     ? [[1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, -1]]
@@ -115,17 +126,26 @@ export function drawFrontCat(ctx, { size, cx, ground, face, lying, look, bob, no
   drawTail(ctx, bodyX + bw - 1, ground - 3, tail);
 
   blob(ctx, bodyX, bodyY, bw, bh, C.fur, C.outline);
+  rect(ctx, bodyX + bw - 3, bodyY + 2, 2, Math.max(1, bh - 3), C.shade); // shade on the far side
+  rect(ctx, bodyX + 1, bodyY + bh - 2, bw - 2, 1, C.shade);
+  if (C.stripes) {
+    for (let i = 0; i < 3 && bodyY + 3 + i * 3 < ground - 2; i++) {
+      rect(ctx, bodyX + 1, bodyY + 3 + i * 3, 2, 1, C.stripe);
+      rect(ctx, bodyX + bw - 3, bodyY + 3 + i * 3, 2, 1, C.stripe);
+    }
+  }
   const belly = Math.floor(bw / 4);
   rect(ctx, cx - belly, bodyY + 2, belly * 2 + 1, Math.max(1, bh - 4), C.furLight);
   patch(ctx, bodyX + 1, bodyY + 2, 2, 3);
   if (!lying) {
-    rect(ctx, cx - 4, ground - 3, 3, 2, C.furLight);
-    rect(ctx, cx + 2, ground - 3, 3, 2, C.furLight);
+    rect(ctx, cx - 4, ground - 3, 3, 2, pointsOr(C.furLight));
+    rect(ctx, cx + 2, ground - 3, 3, 2, pointsOr(C.furLight));
     rect(ctx, cx - 2, ground - 3, 1, 2, C.outline);
     rect(ctx, cx + 1, ground - 3, 1, 2, C.outline);
   }
 
   blob(ctx, headX, headY, hw, hh, C.fur, C.outline);
+  rect(ctx, headX + hw - 3, headY + 3, 1, Math.max(1, hh - 6), C.shade);
   patch(ctx, headX + hw - 5, headY + 1, 3, 3);
   drawEars(ctx, headX, headY, hw, ear);
   rect(ctx, cx - 2, headY + 1, 1, 2, C.stripe);
@@ -135,6 +155,7 @@ export function drawFrontCat(ctx, { size, cx, ground, face, lying, look, bob, no
   const ey = headY + Math.round(hh * 0.42);
   const gap = Math.round(hw * 0.18) + 1;
   rect(ctx, cx - 3, ey + 2, 7, Math.min(3, headY + hh - ey - 3), C.furLight);
+  if (C.points) rect(ctx, cx - gap - 3, ey - 1, gap * 2 + 7, Math.min(6, headY + hh - ey), C.points); // dark mask
   rect(ctx, cx - 1, ey + 2, 3, 1, C.pink);
   rect(ctx, headX - 2, ey + 3, 3, 1, C.outline);
   rect(ctx, headX + hw - 1, ey + 3, 3, 1, C.outline);
@@ -183,6 +204,7 @@ export function drawSideCat(ctx, { size, x, ground, facing, frame, jumping, face
   const bob = !jumping && !crouch && scratch === null && frame % 2 === 1 ? 1 : 0;
   const wiggle = crouch ? [0, 1, 0, -1][Math.floor(now / 90) % 4] : 0;
 
+  if (!jumping) groundShadow(ctx, x, ground, L + 6);
   ctx.save();
   ctx.translate(x, 0);
   ctx.scale(facing, 1);
@@ -205,13 +227,15 @@ export function drawSideCat(ctx, { size, x, ground, facing, frame, jumping, face
     const lifted = !jumping && !crouch && dx > 0 ? 1 : 0;
     const h = leg + 2 + bob - lifted;
     rect(ctx, lx + dx, legTop, 3, h, C.outline);
-    rect(ctx, lx + dx + 1, legTop, 1, h - 1, C.fur);
-    rect(ctx, lx + dx + 1, legTop + h - 2, 1, 1, C.furLight);
+    rect(ctx, lx + dx + 1, legTop, 1, h - 1, pointsOr(C.fur));
+    rect(ctx, lx + dx + 1, legTop + h - 2, 1, 1, pointsOr(C.furLight));
   });
 
   blob(ctx, bx, bodyTop, L, H, C.fur, C.outline);
+  rect(ctx, bx + 2, bodyTop + 1, L - 4, 1, C.shade); // darker along the back
   rect(ctx, bx + 3, bodyTop + H - 3, L - 6, 2, C.furLight);
-  for (let i = 0; i < 3; i++) rect(ctx, bx + 3 + i * 3, bodyTop + 1, 1, 2, C.stripe);
+  const stripeLength = C.stripes ? H - 4 : 2;
+  for (let i = 0; i < (C.stripes ? 4 : 3); i++) rect(ctx, bx + 3 + i * 3, bodyTop + 1, 1, stripeLength, C.stripe);
   patch(ctx, bx + L - 9, bodyTop + 2, 3, 2);
 
   const hx = bx + L - Math.floor(hw / 2) - 1;
@@ -224,6 +248,7 @@ export function drawSideCat(ctx, { size, x, ground, facing, frame, jumping, face
   const ey = hy + Math.round(hh * 0.4);
   const ex = hx + hw - 5;
   rect(ctx, hx + hw - 5, ey + 2, 4, Math.min(3, hy + hh - ey - 3), C.furLight);
+  if (C.points) rect(ctx, hx + hw - 6, ey - 1, 6, Math.min(6, hy + hh - ey), C.points); // dark mask
   drawEye(ctx, ex, ey, face.eyes);
   if (face.eyes === 'grumpy') {
     rect(ctx, ex - 1, ey - 2, 1, 1, C.outline);

@@ -166,6 +166,9 @@ export default {
   fur_black: 'Black',
   fur_white: 'White',
   fur_calico: 'Calico',
+  fur_tuxedo: 'Tuxedo cat',
+  fur_tabby: 'Tabby cat',
+  fur_siamese: 'Siamese cat',
 
   inviteTitle: 'Invite friends',
   inviteButton: 'Share the game link',
