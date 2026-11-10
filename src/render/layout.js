@@ -39,7 +39,8 @@ export const GARDEN_SPOTS = {
 };
 
 // Where presents the cats bring home lie on the floor (top-left corner of each), by present spot number.
-export const PRESENT_SPOTS = [{ x: 8, y: 110 }, { x: 104, y: 111 }, { x: 52, y: 112 }];
+// Kept clear of the bottom-left corner, where the garden buttons sit.
+export const PRESENT_SPOTS = [{ x: 76, y: 115 }, { x: 104, y: 111 }, { x: 56, y: 115 }];
 
 // Where cats sit when the page opens (spots that are always there, even in an empty room),
 // and where they curl up at night, in cat order. The last five sleep spots are always there.

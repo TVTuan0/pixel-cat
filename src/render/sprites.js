@@ -77,12 +77,20 @@ export const SPRITES = {
     rows: ['..ooo..o', '.obbbooo', 'obkbbbbo', '.obbbooo', '..ooo..o'],
   },
   toy_yarn: {
-    colors: { o: '#4a3a8a', p: '#9b7bff', q: '#cdbbff' },
-    rows: ['.oooo.', 'oppqpo', 'opqppo', 'oqpppo', 'oppqpo', '.oooo.'],
+    cell: 0.5,
+    colors: { o: '#4a3a8a', p: '#9b7bff', q: '#cdbbff', d: '#7a5ad6' },
+    rows: [
+      '...oooooo...', '..oppqppdo..', '.opqppqppdo.', 'oppqpppqppdo', 'oqpppqpppqdo', 'opppqpppqpdo',
+      'oppqpppqppdo', 'opqpppqpppdo', '.oppqpppqdo.', '..odddddo...', '...oooooo..p', '..........pp',
+    ],
   },
   toy_mouse: {
-    colors: { o: '#5a5a6a', g: '#b8b8c8', p: '#ff8fa3', k: '#1a1a2e' },
-    rows: ['..pp.....', '.ogggg...', 'okggggo..', '.oooooopp'],
+    cell: 0.5,
+    colors: { o: '#5a5a6a', g: '#b8b8c8', l: '#d8d8e4', p: '#ff8fa3', k: '#1a1a2e' },
+    rows: [
+      '...pp.............', '..pgpo............', '.oggggoo..........', 'okglgggggoo.......', 'opgggggggggo......',
+      '.oggggggggggopp...', '..ooooooooooo.pppp', '................pp',
+    ],
   },
   decor_plant: {
     colors: { l: '#4caf50', s: '#2e7d32', o: '#7a3a2a', t: '#d0704a' },
@@ -217,11 +225,34 @@ export const SPRITES = {
     colors: { b: '#5ab0ff', w: '#ffffff' },
     rows: ['...b...', '..bbb..', '.bbbbb.', 'bbwbbbb', 'bwbbbbb', 'bbbbbbb', '.bbbbb.', '..bbb..'],
   },
-  heart: { colors: { r: '#ff4d6d' }, rows: ['.r.r.', 'rrrrr', '.rrr.', '..r..'] },
-  bug: { colors: { k: '#2a1d1d', l: '#7a6a85' }, rows: ['l.l', 'kkk', '.k.'] },
-  anger: { colors: { r: '#e8384f' }, rows: ['rr.rr', 'r...r', '.....', 'r...r', 'rr.rr'] },
-  zzz: { colors: { z: '#ffffff' }, rows: ['zzzz', '..z.', '.z..', 'zzzz'] },
-  sparkle: { colors: { w: '#ffffff' }, rows: ['.w.', 'www', '.w.'] },
+  heart: {
+    cell: 0.5,
+    colors: { r: '#ff4d6d', d: '#c8304e', w: '#ffffff' },
+    rows: ['.rr...rr.', 'rwrr.rrrr', 'rwrrrrrrr', 'rrrrrrrrd', '.rrrrrrd.', '..rrrrd..', '...rrd...', '....d....'],
+  },
+  bug: {
+    cell: 0.5,
+    colors: { k: '#2a1d1d', r: '#c83a3a', l: '#7a6a85', w: '#ffffff' },
+    rows: ['.l..l.', '..kk..', '.kwrk.', 'krkrrk', 'krrkrk', '.kkkk.'],
+  },
+  anger: {
+    cell: 0.5,
+    colors: { r: '#e8384f', d: '#a82038' },
+    rows: [
+      '.rr....rr.', 'rd.r..r.dr', 'r..r..r..r', '.rrr..rrr.', '..........',
+      '..........', '.rrr..rrr.', 'r..r..r..r', 'rd.r..r.dr', '.rr....rr.',
+    ],
+  },
+  zzz: {
+    cell: 0.5,
+    colors: { z: '#ffffff', s: '#a8b4e0' },
+    rows: ['zzzzz....', 'sssz.....', '..z......', '.z...zzz.', 'zzzzzssz.', 'sssss.z..', '.....zzz.', '.....sss.'],
+  },
+  sparkle: {
+    cell: 0.5,
+    colors: { w: '#ffffff', y: '#fff6b0' },
+    rows: ['...w...', '...w...', '..wyw..', 'wwyyyww', '..wyw..', '...w...', '...w...'],
+  },
   garden_door: {
     colors: { o: '#3e5a2a', g: '#6cc04a', w: '#cfe8ff', b: '#9fd8ff', y: '#ffd84a' },
     rows: ['.oooooo.', 'oggggggo', 'ogwwwwgo', 'ogwbbwgo', 'ogwwwwgo', 'oggggggo', 'ogggggyo', 'oggggggo', 'oggggggo', 'oooooooo'],
@@ -236,12 +267,37 @@ export const SPRITES = {
     rows: ['....r....', '...rrr...', '..rrrrr..', '.rrrrrrr.', '.wwwwwww.', '.wbwwkkw.', '.wwwwkkw.'],
   },
   // Things a cat brings home.
-  present_leaf: { colors: { g: '#5cc96b', d: '#2e7d32' }, rows: ['....gg', '..gggg', '.ggdgg', 'ggdgg.', 'd.....'] },
-  present_feather: { colors: { w: '#ffffff', g: '#b9c3d6' }, rows: ['....www', '..wwwg.', '.wwgg..', 'g......'] },
-  present_sock: { colors: { r: '#e8384f', w: '#ffffff' }, rows: ['.www.', '.rrr.', '.rrr.', '.rrr.', 'rrrr.', 'wwww.'] },
+  present_leaf: {
+    cell: 0.5,
+    colors: { g: '#5cc96b', l: '#8ee07a', d: '#2e7d32', s: '#7a5a3a' },
+    rows: [
+      '.........ggg', '.......gglgg', '.....gglggdg', '....gglggdg.', '...gglgdgg..', '..gggdgg....',
+      '.ggdgg......', '.gdgg.......', 'sd..........', 's...........',
+    ],
+  },
+  present_feather: {
+    cell: 0.5,
+    colors: { w: '#ffffff', g: '#c8d0e0', q: '#8a96b0' },
+    rows: [
+      '..........ww', '........wwwg', '......wwwwg.', '....wwwwgg..', '...wwwggg...', '..wwgg......',
+      '.wgg........', 'q...........',
+    ],
+  },
+  present_sock: {
+    cell: 0.5,
+    colors: { r: '#e8384f', d: '#b02a3a', w: '#ffffff', g: '#e0e0e8' },
+    rows: [
+      '.wwwwww...', '.wgwgwg...', '.rrrrrr...', '.rwwwwr...', '.rrrrrr...', '.rrrrrd...', '.rwwwwr...',
+      '.rrrrrd...', 'rrrrrrrr..', 'rrrrrrrrd.', 'wwwwwwwgg.', '.wwwwwgg..',
+    ],
+  },
   present_box: {
-    colors: { b: '#5ab0ff', r: '#e8384f', y: '#ffd84a' },
-    rows: ['.y...y.', '..yry..', 'rrrrrrr', 'bbbrbbb', 'bbbrbbb', 'bbbrbbb', 'bbbrbbb'],
+    cell: 0.5,
+    colors: { b: '#5ab0ff', l: '#8ccaff', d: '#3a8ad8', r: '#e8384f', y: '#ffd84a', o: '#2a4a7a' },
+    rows: [
+      '..yy....yy..', '.y..y..y..y.', '..yy.rr.yy..', 'ooooorroooo.', 'olllllrllllo', 'orrrrrrrrrro',
+      'obbbbrrbbbbo', 'obbbbrrbbbdo', 'obbbbrrbbbdo', 'obbbbrrbbddo', 'oddddrrdddo.', 'ooooooooooo.',
+    ],
   },
   coin: {
     colors: { o: '#b8860b', y: '#ffd23f', w: '#fff6c8' },
@@ -274,8 +330,9 @@ export const SPRITES = {
   trophy_silver: { colors: { y: '#d9dde6', l: '#ffffff', o: '#5a5a6a' }, rows: ['yyyyy', 'ylyyy', '.yyy.', '..y..', '.yyy.', 'ooooo'] },
   trophy_bronze: { colors: { y: '#d0884a', l: '#ffffff', o: '#6b3e1f' }, rows: ['yyyyy', 'ylyyy', '.yyy.', '..y..', '.yyy.', 'ooooo'] },
   arrow: {
-    colors: { y: '#ffd84a', o: '#7a5a00' },
-    rows: ['ooooo', 'oyyyo', '.oyo.', '..o..'],
+    cell: 0.5,
+    colors: { y: '#ffd84a', l: '#fff2b0', o: '#7a5a00' },
+    rows: ['ooooooooo', 'olllllllo', 'oyyyyyyyo', '.oyyyyyo.', '..oyyyo..', '...oyo...', '....o....'],
   },
   paw: {
     colors: { p: '#ff8fa3', o: '#7a2e45' },
