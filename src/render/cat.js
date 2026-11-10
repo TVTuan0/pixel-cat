@@ -28,12 +28,12 @@ export const FACES = {
 // Body proportions per growth stage, in fine pixels: body length and height, leg length, head size, ear height,
 // tail length. Young cats have big heads and short legs; grown cats long bodies; old cats a sagging back.
 const BODY = {
-  newborn: { L: 24, H: 14, leg: 3, hw: 19, hh: 17, ear: 7, tail: 12, legW: 5 },
-  kitten: { L: 28, H: 17, leg: 5, hw: 25, hh: 21, ear: 9, tail: 16, legW: 5 },
-  young: { L: 36, H: 20, leg: 7, hw: 27, hh: 23, ear: 10, tail: 22, legW: 6 },
-  adult: { L: 44, H: 24, leg: 8, hw: 30, hh: 26, ear: 11, tail: 26, legW: 7 },
-  mature: { L: 48, H: 27, leg: 8, hw: 32, hh: 28, ear: 11, tail: 28, legW: 7 },
-  senior: { L: 48, H: 26, leg: 7, hw: 31, hh: 27, ear: 10, tail: 26, legW: 7, sag: true },
+  newborn: { L: 24, H: 13, leg: 4, hw: 18, hh: 16, ear: 7, tail: 12, legW: 5 },
+  kitten: { L: 30, H: 15, leg: 6, hw: 23, hh: 19, ear: 9, tail: 18, legW: 5 },
+  young: { L: 38, H: 18, leg: 8, hw: 25, hh: 21, ear: 10, tail: 24, legW: 5 },
+  adult: { L: 46, H: 21, leg: 10, hw: 27, hh: 23, ear: 11, tail: 28, legW: 6 },
+  mature: { L: 50, H: 23, leg: 10, hw: 29, hh: 25, ear: 11, tail: 30, legW: 6 },
+  senior: { L: 50, H: 22, leg: 9, hw: 28, hh: 24, ear: 10, tail: 28, legW: 6, sag: true },
 };
 
 const COLLAR_COLORS = { collar_red: '#e8384f', collar_blue: '#3a7bff', collar_gold: '#8b4513' };
@@ -276,17 +276,17 @@ function drawStanding(b, { ground, pose, frame, now, face, look, equipped, scrat
   leg(back + 3 + reach(step, 0), legTop, legW, legH + 6 - (step > 0 ? 2 : 0), C.shade);
 
   shape(bx, bodyTop, b.L, b.H, C.fur, {
-    round: 1.9,
+    round: 2.2,
     inside: () => {
       bodyMarkings(bx, bodyTop, b.L, b.H);
       if (b.sag) P(bx + 10, bodyTop, b.L - 20, 1, C.shade);
     },
   });
   // The near back thigh: a round haunch over the top of the back leg.
-  shape(bx + 1, bodyTop + Math.round(b.H * 0.22), legW + 9, Math.round(b.H * 0.78), C.fur, {
-    round: 1.8,
+  shape(bx + 1, bodyTop + Math.round(b.H * 0.3), legW + 7, Math.round(b.H * 0.7), C.fur, {
+    round: 2,
     inside: () => {
-      P(bx + 1, bodyTop + b.H - 4, legW + 9, 4, C.shade);
+      P(bx + 1, bodyTop + b.H - 4, legW + 7, 4, C.shade);
       if (C.stripes) for (let i = 0; i < 3; i++) P(bx + 4, bodyTop + 8 + i * 4, legW + 3, 1, C.stripe);
       if (C.patch) P(bx + 3, bodyTop + 8, 6, 5, C.stripe);
     },
@@ -320,8 +320,8 @@ function drawStanding(b, { ground, pose, frame, now, face, look, equipped, scrat
 // `itch` (0/1, or null) raises a back paw to the ear.
 function drawSitting(b, { ground, now, face, look, equipped, itch }) {
   const bx = -Math.round(b.L / 2);
-  const hauW = Math.round(b.L * 0.66), hauH = Math.round(b.H * 1.3);
-  const chestW = Math.round(b.L * 0.42), chestH = Math.round(b.H * 1.4);
+  const hauW = Math.round(b.L * 0.58), hauH = Math.round(b.H * 1.25);
+  const chestW = Math.round(b.L * 0.38), chestH = Math.round(b.H * 1.45);
   const chestX = bx + Math.round(b.L * 0.36);
   // Tail wrapped round the front, along the ground.
   const tail = [];
