@@ -1,7 +1,7 @@
 // All tunable game numbers live here.
 
 export const SAVE_KEY = 'pixel-cat-save';
-export const SAVE_VERSION = 2; // 2: several cats (version 1 saves are upgraded on load)
+export const SAVE_VERSION = 3; // 3: empty room at the start (older saves are dropped)
 
 export const HOUR = 60 * 60 * 1000;
 export const DAY = 24 * HOUR;
@@ -42,7 +42,7 @@ export const GIFT_BASE_COINS = 5;
 export const GIFT_STREAK_BONUS = 2; // per streak day, up to a week
 export const GIFT_STREAK_CAP = 7;
 
-export const START_COINS = 10;
+export const START_COINS = 25; // just enough for the basic supplies
 
 export const FOODS = [
   { id: 'kibble', price: 0, hunger: 25, happiness: 2, coins: 1 },
@@ -53,24 +53,35 @@ export const FOODS = [
 // Percent of days with each weather (snow gets the rest).
 export const WEATHER_CHANCE = { clear: 60, rain: 25 };
 
-// Items in these slots are used one at a time. Toys and decor show whenever owned.
+// Items in these slots are used one at a time. Everything else shows in the room whenever owned.
 export const EQUIP_SLOTS = ['hat', 'collar', 'wall', 'floor'];
 
+// `help`: how much slower a stat drops while the item is owned and not broken, in percent.
 export const SHOP_ITEMS = [
+  { id: 'bowl', slot: 'basic', price: 5 },
+  { id: 'litter', slot: 'basic', price: 10 },
+  { id: 'cushion', slot: 'basic', price: 10 },
+  { id: 'cat_tree', slot: 'gear', price: 40, help: { happiness: 15 } },
+  { id: 'soft_bed', slot: 'gear', price: 45, help: { energy: 15 } },
+  { id: 'auto_feeder', slot: 'gear', price: 60, help: { hunger: 15 } },
+  { id: 'auto_litter', slot: 'gear', price: 70, help: { cleanliness: 15 } },
+  { id: 'sofa', slot: 'furniture', price: 50, help: { happiness: 10 } },
+  { id: 'bookshelf', slot: 'furniture', price: 35, help: { happiness: 5 } },
+  { id: 'lamp', slot: 'furniture', price: 25, help: { energy: 5 } },
   { id: 'collar_red', slot: 'collar', price: 8 },
   { id: 'collar_blue', slot: 'collar', price: 8 },
   { id: 'collar_gold', slot: 'collar', price: 20 },
   { id: 'hat_bow', slot: 'hat', price: 15 },
   { id: 'hat_party', slot: 'hat', price: 25 },
   { id: 'hat_crown', slot: 'hat', price: 40 },
-  { id: 'toy_yarn', slot: 'toy', price: 12 },
-  { id: 'toy_mouse', slot: 'toy', price: 12 },
-  { id: 'decor_plant', slot: 'decor', price: 15 },
-  { id: 'decor_rug', slot: 'decor', price: 20 },
-  { id: 'decor_frame', slot: 'decor', price: 30 },
-  { id: 'decor_lights', slot: 'decor', price: 25 },
-  { id: 'decor_beanbag', slot: 'decor', price: 30 },
-  { id: 'decor_fishbowl', slot: 'decor', price: 35 },
+  { id: 'toy_yarn', slot: 'toy', price: 12, help: { happiness: 5 } },
+  { id: 'toy_mouse', slot: 'toy', price: 12, help: { happiness: 5 } },
+  { id: 'decor_plant', slot: 'decor', price: 15, help: { happiness: 5 } },
+  { id: 'decor_rug', slot: 'decor', price: 20, help: { energy: 5 } },
+  { id: 'decor_frame', slot: 'decor', price: 30, help: { happiness: 5 } },
+  { id: 'decor_lights', slot: 'decor', price: 25, help: { happiness: 5 } },
+  { id: 'decor_beanbag', slot: 'decor', price: 30, help: { energy: 5 } },
+  { id: 'decor_fishbowl', slot: 'decor', price: 35, help: { happiness: 5 } },
   { id: 'wall_stripes', slot: 'wall', price: 20 },
   { id: 'wall_mint', slot: 'wall', price: 20 },
   { id: 'wall_stars', slot: 'wall', price: 30 },
@@ -78,6 +89,14 @@ export const SHOP_ITEMS = [
   { id: 'floor_tiles', slot: 'floor', price: 25 },
   { id: 'floor_carpet', slot: 'floor', price: 25 },
 ];
+
+// Items help at most this much per stat, so cats still need care.
+export const MAX_HELP = 40;
+// Angry cats break items from these slots. Basic supplies never break, so feeding and cleaning always work.
+export const BREAKABLE_SLOTS = ['gear', 'furniture', 'decor', 'toy'];
+export const ANGRY_BELOW = 10; // a cat with any stat below this is angry
+export const BREAK_EVERY_HOURS = 6; // an angry cat breaks one more item this often
+export const REPAIR_SHARE = 0.5; // repairs cost this share of the price
 
 // The public link shown on cards and in invites (the game may also run on other sites, like itch.io).
 export const SITE_URL = 'https://pixel-cat-green.vercel.app';

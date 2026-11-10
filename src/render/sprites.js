@@ -131,6 +131,47 @@ export const SPRITES = {
       'oBBBBBBBBBBBBBBo', '.oooooooooooooo.',
     ],
   },
+  cushion: {
+    colors: { o: '#6b5040', c: '#c9b08a', d: '#a08860' },
+    rows: ['..oooooo..', '.occcccco.', 'occdccdcco', 'occcccccco', '.oooooooo.'],
+  },
+  cat_tree: {
+    colors: { p: '#7a6ad6', q: '#4a3a8a', s: '#d9c49a', b: '#a87a50', d: '#6b4420' },
+    rows: [
+      '.pppppp...', '.qqqqqq...', '...ss.....', '...ss.pppp', '...ss.qqqq',
+      '...ss.....', '...ss.....', '...ss.....', 'bbbbbbbbb.', 'ddddddddd.',
+    ],
+  },
+  soft_bed: {
+    colors: { r: '#7a2e45', p: '#c0587a', w: '#ffb3c6' },
+    rows: ['.rrrrrrrrrr.', 'rppppppppppr', 'rpwwwwwwwwpr', 'rpwwwwwwwwpr', 'rrrrrrrrrrrr'],
+  },
+  auto_feeder: {
+    colors: { o: '#3a3a5a', g: '#d8e0ea', k: '#b06a3b', b: '#5ab0ff' },
+    rows: ['.oooooo.', '.oggggo.', '.okkkko.', '.oggggo.', '.oggggo.', 'oooooooo', 'obbbbbbo', '.oooooo.'],
+  },
+  auto_litter: {
+    colors: { o: '#3c5a6e', h: '#9fd6ff', g: '#5cc96b', k: '#2a2a3a' },
+    rows: [
+      '....oooooooo....', '..oohhhhhhhhoo..', '.ohhhhhhhhhhhho.', 'ohhhhhgghhhhhhho',
+      'ohhhhkkkkkkhhhho', 'ohhhhkkkkkkhhhho', '.oooooooooooooo.',
+    ],
+  },
+  sofa: {
+    colors: { b: '#2f4f8a', B: '#5b8bd9', l: '#7fa6e6', L: '#a8c4f0', d: '#5a3a1e' },
+    rows: ['..bbbbbbbbbb..', '.bBBBBBBBBBBb.', 'lbBBBBBBBBBBbl', 'llLLLLLLLLLLll', 'llbbbbbbbbbbll', '.d..........d.'],
+  },
+  bookshelf: {
+    colors: { o: '#8a5a2a', d: '#5a3a1e', r: '#e8384f', b: '#3a7bff', y: '#f2c14e', g: '#5cc96b', p: '#9b7bff' },
+    rows: [
+      'oooooooooo', 'odrbydgdpo', 'odrbydgdpo', 'oooooooooo', 'odgdpryddo',
+      'odgdpryddo', 'oooooooooo', 'oddydbrddo', 'oddydbrddo', 'oooooooooo',
+    ],
+  },
+  lamp: {
+    colors: { y: '#ffd27f', o: '#8a5a2a', g: '#4a4a5a' },
+    rows: ['..yyyy..', '.yyyyyy.', 'yyyyyyyy', 'oooooooo', '...gg...', '...gg...', '...gg...', '...gg...', '.gggggg.'],
+  },
   heart: { colors: { r: '#ff4d6d' }, rows: ['.r.r.', 'rrrrr', '.rrr.', '..r..'] },
   zzz: { colors: { z: '#ffffff' }, rows: ['zzzz', '..z.', '.z..', 'zzzz'] },
   sparkle: { colors: { w: '#ffffff' }, rows: ['.w.', 'www', '.w.'] },

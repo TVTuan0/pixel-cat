@@ -63,38 +63,9 @@ describe('state', () => {
     expect(loadState(store, T0)).toBe(null);
   });
 
-  it('turns a one-cat save into cat #1, keeping everything', () => {
-    const loaded = loadState(storeWith(VERSION_1_SAVE), T0);
-    expect(loaded.version).toBe(2);
-    expect(loaded.selected).toBe(1);
-    expect(loaded.cats).toEqual([{
-      id: 1,
-      name: 'Mochi',
-      fur: 'calico',
-      adoptedAt: T0 - 4 * DAY,
-      stats: { hunger: 50, happiness: 60, energy: 70, cleanliness: 80 },
-      lastPetAt: 0,
-      seenStage: 'young',
-      equipped: { hat: 'hat_bow', collar: null },
-    }]);
-    expect(loaded).toMatchObject({
-      coins: 42, owned: ['hat_bow', 'wall_mint'], equipped: { wall: 'wall_mint', floor: null },
-      streak: 3, counters: { feed: 5 }, stickers: ['first_meal'], lang: 'vi', sound: true,
-    });
-    expect(loaded.name).toBeUndefined();
-  });
-
-  it('upgrades the oldest one-cat saves (no fur, no progress, no wallpaper)', () => {
-    const oldest = { ...VERSION_1_SAVE, equipped: { hat: null, collar: 'collar_red' } };
-    delete oldest.fur;
-    delete oldest.counters;
-    delete oldest.stickers;
-    delete oldest.daily;
-    const loaded = loadState(storeWith(oldest), T0);
-    expect(loaded.cats[0].fur).toBe('orange');
-    expect(loaded.cats[0].equipped).toEqual({ hat: null, collar: 'collar_red' });
-    expect(loaded.equipped).toEqual({ wall: null, floor: null });
-    expect(loaded).toMatchObject({ counters: {}, stickers: [], daily: null });
+  it('drops saves from before the empty-room update', () => {
+    expect(loadState(storeWith(VERSION_1_SAVE), T0)).toBe(null);
+    expect(loadState(storeWith({ ...createState('Mochi', T0, 'vi'), version: 2 }), T0)).toBe(null);
   });
 
   it('new cats start with sound off', () => {

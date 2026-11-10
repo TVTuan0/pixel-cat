@@ -6,7 +6,7 @@ import {
   CLEAN_COINS, PLAY_MIN_ENERGY, PLAY_ENERGY_COST, GIFT_BASE_COINS,
   GIFT_STREAK_BONUS, GIFT_STREAK_CAP, FOODS, SHOP_ITEMS, WEATHER_CHANCE,
   TASKS, TASKS_PER_DAY, STICKERS, LUNAR_DATES, MAX_CATS, NEW_CAT_PRICES, NEW_CAT_NEEDS_STAGE,
-  CONTEST_ENTRY_COINS, CONTEST_PRIZES,
+  CONTEST_ENTRY_COINS, CONTEST_PRIZES, MAX_HELP,
 } from './config.js';
 
 const clamp = (v) => Math.max(0, Math.min(100, v));
@@ -40,15 +40,35 @@ export function newCat(id, name, fur, now) {
   };
 }
 
+// Owned items that still work (not broken by an angry cat).
+export function usableItems(state) {
+  const broken = state.broken ?? [];
+  return state.owned.filter((id) => !broken.includes(id));
+}
+
+// How much slower `stat` drops thanks to the room's working items, in percent.
+export function helpFor(state, stat) {
+  const usable = usableItems(state);
+  const total = SHOP_ITEMS
+    .filter((i) => usable.includes(i.id))
+    .reduce((sum, i) => sum + (i.help?.[stat] ?? 0), 0);
+  return Math.min(MAX_HELP, total);
+}
+
+// How much each stat changes per hour (negative = drops). Sleep raises energy instead.
+function changePerHour(state) {
+  const change = {};
+  for (const [stat, drop] of Object.entries(DECAY_PER_HOUR)) change[stat] = -drop * (1 - helpFor(state, stat) / 100);
+  if (state.asleep) change.energy = SLEEP_ENERGY_PER_HOUR;
+  return change;
+}
+
 export function applyElapsed(state, now) {
   const hours = Math.max(0, now - state.lastSeen) / HOUR;
-  const energyChange = state.asleep ? SLEEP_ENERGY_PER_HOUR : -DECAY_PER_HOUR.energy;
-  const cats = state.cats.map((cat) => withStats(cat, {
-    hunger: -DECAY_PER_HOUR.hunger * hours,
-    happiness: -DECAY_PER_HOUR.happiness * hours,
-    energy: energyChange * hours,
-    cleanliness: -DECAY_PER_HOUR.cleanliness * hours,
-  }));
+  const perHour = changePerHour(state);
+  const cats = state.cats.map((cat) => withStats(cat, Object.fromEntries(
+    Object.entries(perHour).map(([stat, change]) => [stat, change * hours]),
+  )));
   return { ...state, cats, lastSeen: Math.max(now, state.lastSeen) };
 }
 
